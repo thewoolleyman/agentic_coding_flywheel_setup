@@ -325,7 +325,7 @@ ensure_ubuntu() {
 }
 
 ensure_base_deps() {
-    log_step "0/8" "Checking base dependencies..."
+    log_step "0/9" "Checking base dependencies..."
 
     if [[ "$DRY_RUN" == "true" ]]; then
         local sudo_prefix=""
@@ -349,7 +349,7 @@ ensure_base_deps() {
 # Phase 1: User normalization
 # ============================================================
 normalize_user() {
-    log_step "1/8" "Normalizing user account..."
+    log_step "1/9" "Normalizing user account..."
 
     # Create target user if it doesn't exist
     if ! id "$TARGET_USER" &>/dev/null; then
@@ -387,7 +387,7 @@ normalize_user() {
 # Phase 2: Filesystem setup
 # ============================================================
 setup_filesystem() {
-    log_step "2/8" "Setting up filesystem..."
+    log_step "2/9" "Setting up filesystem..."
 
     # System directories
     local sys_dirs=("/data/projects" "/data/cache")
@@ -422,7 +422,7 @@ setup_filesystem() {
 # Phase 3: Shell setup (zsh + oh-my-zsh + p10k)
 # ============================================================
 setup_shell() {
-    log_step "3/8" "Setting up shell..."
+    log_step "3/9" "Setting up shell..."
 
     # Install zsh
     if ! command_exists zsh; then
@@ -488,7 +488,7 @@ EOF
 # Phase 4: CLI tools
 # ============================================================
 install_cli_tools() {
-    log_step "4/8" "Installing CLI tools..."
+    log_step "4/9" "Installing CLI tools..."
 
     # Install gum first for enhanced UI
     if ! command_exists gum; then
@@ -527,7 +527,7 @@ install_cli_tools() {
 # Phase 5: Language runtimes
 # ============================================================
 install_languages() {
-    log_step "5/8" "Installing language runtimes..."
+    log_step "5/9" "Installing language runtimes..."
 
     # Bun (install as target user)
     if [[ ! -d "$TARGET_HOME/.bun" ]]; then
@@ -572,7 +572,7 @@ install_languages() {
 # Phase 6: Coding agents
 # ============================================================
 install_agents() {
-    log_step "6/8" "Installing coding agents..."
+    log_step "6/9" "Installing coding agents..."
 
     # Use target user's bun
     local bun_bin="$TARGET_HOME/.bun/bin/bun"
@@ -598,10 +598,125 @@ install_agents() {
 }
 
 # ============================================================
-# Phase 7: Dicklesworthstone stack
+# Phase 7: Cloud & database tools
+# ============================================================
+install_cloud_db() {
+    log_step "7/9" "Installing cloud & database tools..."
+
+    local codename="noble"
+    if [[ -f /etc/os-release ]]; then
+        # shellcheck disable=SC1091
+        source /etc/os-release
+        codename="${VERSION_CODENAME:-noble}"
+    fi
+
+    # PostgreSQL 18 (via PGDG)
+    if [[ "$SKIP_POSTGRES" == "true" ]]; then
+        log_detail "Skipping PostgreSQL (--skip-postgres)"
+    elif command_exists psql; then
+        log_detail "PostgreSQL already installed ($(psql --version 2>/dev/null | head -1 || echo 'psql'))"
+    else
+        log_detail "Installing PostgreSQL 18 (PGDG repo, codename=$codename)"
+        $SUDO mkdir -p /etc/apt/keyrings
+
+        if ! curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+            $SUDO gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg 2>/dev/null; then
+            log_warn "PostgreSQL: failed to install signing key (skipping)"
+        else
+            echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${codename}-pgdg main" | \
+                $SUDO tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+
+            $SUDO apt-get update -y >/dev/null 2>&1 || log_warn "PostgreSQL: apt-get update failed (continuing)"
+
+            if $SUDO apt-get install -y postgresql-18 postgresql-client-18 >/dev/null 2>&1; then
+                log_success "PostgreSQL 18 installed"
+
+                # Best-effort service start (containers may not have systemd)
+                if command_exists systemctl; then
+                    $SUDO systemctl enable postgresql >/dev/null 2>&1 || true
+                    $SUDO systemctl start postgresql >/dev/null 2>&1 || true
+                fi
+
+                # Best-effort role + db for target user
+                if command_exists runuser; then
+                    $SUDO runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$TARGET_USER'" | grep -q 1 || \
+                        $SUDO runuser -u postgres -- createuser -s "$TARGET_USER" 2>/dev/null || true
+                    $SUDO runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_database WHERE datname='$TARGET_USER'" | grep -q 1 || \
+                        $SUDO runuser -u postgres -- createdb "$TARGET_USER" 2>/dev/null || true
+                elif command_exists sudo; then
+                    sudo -u postgres -H psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$TARGET_USER'" | grep -q 1 || \
+                        sudo -u postgres -H createuser -s "$TARGET_USER" 2>/dev/null || true
+                    sudo -u postgres -H psql -tAc "SELECT 1 FROM pg_database WHERE datname='$TARGET_USER'" | grep -q 1 || \
+                        sudo -u postgres -H createdb "$TARGET_USER" 2>/dev/null || true
+                fi
+            else
+                log_warn "PostgreSQL: installation failed (optional)"
+            fi
+        fi
+    fi
+
+    # Vault (HashiCorp apt repo)
+    if [[ "$SKIP_VAULT" == "true" ]]; then
+        log_detail "Skipping Vault (--skip-vault)"
+    elif command_exists vault; then
+        log_detail "Vault already installed ($(vault --version 2>/dev/null | head -1 || echo 'vault'))"
+    else
+        log_detail "Installing Vault (HashiCorp repo, codename=$codename)"
+        $SUDO mkdir -p /etc/apt/keyrings
+
+        if ! curl -fsSL https://apt.releases.hashicorp.com/gpg | \
+            $SUDO gpg --dearmor -o /etc/apt/keyrings/hashicorp.gpg 2>/dev/null; then
+            log_warn "Vault: failed to install signing key (skipping)"
+        else
+            echo "deb [signed-by=/etc/apt/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com ${codename} main" | \
+                $SUDO tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
+
+            $SUDO apt-get update -y >/dev/null 2>&1 || log_warn "Vault: apt-get update failed (continuing)"
+            if $SUDO apt-get install -y vault >/dev/null 2>&1; then
+                log_success "Vault installed"
+            else
+                log_warn "Vault: installation failed (optional)"
+            fi
+        fi
+    fi
+
+    # Cloud CLIs (bun global installs)
+    if [[ "$SKIP_CLOUD" == "true" ]]; then
+        log_detail "Skipping cloud CLIs (--skip-cloud)"
+    else
+        local bun_bin="$TARGET_HOME/.bun/bin/bun"
+        if [[ ! -x "$bun_bin" ]]; then
+            log_warn "Cloud CLIs: bun not found at $bun_bin (skipping)"
+        else
+            local cli
+            for cli in wrangler supabase vercel; do
+                if [[ -x "$TARGET_HOME/.bun/bin/$cli" ]]; then
+                    log_detail "$cli already installed"
+                    continue
+                fi
+
+                log_detail "Installing $cli via bun"
+                if run_as_target "$bun_bin" install -g "${cli}@latest"; then
+                    if [[ -x "$TARGET_HOME/.bun/bin/$cli" ]]; then
+                        log_success "$cli installed"
+                    else
+                        log_warn "$cli: install finished but binary not found"
+                    fi
+                else
+                    log_warn "$cli installation failed (optional)"
+                fi
+            done
+        fi
+    fi
+
+    log_success "Cloud & database tools phase complete"
+}
+
+# ============================================================
+# Phase 8: Dicklesworthstone stack
 # ============================================================
 install_stack() {
-    log_step "7/8" "Installing Dicklesworthstone stack..."
+    log_step "8/9" "Installing Dicklesworthstone stack..."
 
     # Helper to run install scripts as target user
     run_install_as_target() {
@@ -646,10 +761,10 @@ install_stack() {
 }
 
 # ============================================================
-# Phase 8: Final wiring
+# Phase 9: Final wiring
 # ============================================================
 finalize() {
-    log_step "8/8" "Finalizing installation..."
+    log_step "9/9" "Finalizing installation..."
 
     # Copy tmux config
     log_detail "Installing tmux config"
@@ -705,7 +820,7 @@ finalize() {
   "skip_postgres": $SKIP_POSTGRES,
   "skip_vault": $SKIP_VAULT,
   "skip_cloud": $SKIP_CLOUD,
-  "completed_phases": [1, 2, 3, 4, 5, 6, 7, 8]
+  "completed_phases": [1, 2, 3, 4, 5, 6, 7, 8, 9]
 }
 EOF
     $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_STATE_FILE"
@@ -781,7 +896,7 @@ run_smoke_test() {
         ((critical_passed++))
     else
         echo "✖ Workspace: /data/projects exists" >&2
-        echo "    Fix: sudo mkdir -p /data/projects && sudo chown -R \"$TARGET_USER:$TARGET_USER\" /data" >&2
+        echo "    Fix: sudo mkdir -p /data/projects && sudo chown -R \"$TARGET_USER:$TARGET_USER\" /data/projects" >&2
         ((critical_failed++))
     fi
 
@@ -820,7 +935,7 @@ run_smoke_test() {
         ((critical_passed++))
     else
         echo "✖ NTM: not working" >&2
-        echo "    Fix: re-run installer (phase 7) or run NTM installer: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh | bash" >&2
+        echo "    Fix: re-run installer (phase 8) or run NTM installer: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh | bash" >&2
         ((critical_failed++))
     fi
 
@@ -830,7 +945,7 @@ run_smoke_test() {
         ((critical_passed++))
     else
         echo "✖ Onboard: missing" >&2
-        echo "    Fix: re-run installer (phase 8) or install onboard to $TARGET_HOME/.local/bin/onboard" >&2
+        echo "    Fix: re-run installer (phase 9) or install onboard to $TARGET_HOME/.local/bin/onboard" >&2
         ((critical_failed++))
     fi
 
@@ -838,7 +953,7 @@ run_smoke_test() {
     if [[ -x "$TARGET_HOME/mcp_agent_mail/scripts/run_server_with_token.sh" ]]; then
         echo "✅ Agent Mail: installed (run 'am' to start)" >&2
     else
-        echo "⚠️ Agent Mail: not installed (re-run installer phase 7)" >&2
+        echo "⚠️ Agent Mail: not installed (re-run installer phase 8)" >&2
         ((warnings++))
     fi
 
@@ -864,6 +979,35 @@ run_smoke_test() {
     else
         echo "⚠️ PostgreSQL: not running (optional)" >&2
         ((warnings++))
+    fi
+
+    # Non-critical: Vault installed
+    if [[ "$SKIP_VAULT" == "true" ]]; then
+        echo "⚠️ Vault: skipped (optional)" >&2
+        ((warnings++))
+    elif command_exists vault; then
+        echo "✅ Vault: installed" >&2
+    else
+        echo "⚠️ Vault: not installed (optional)" >&2
+        ((warnings++))
+    fi
+
+    # Non-critical: Cloud CLIs installed
+    if [[ "$SKIP_CLOUD" == "true" ]]; then
+        echo "⚠️ Cloud CLIs: skipped (optional)" >&2
+        ((warnings++))
+    else
+        local missing_cloud=()
+        [[ -x "$TARGET_HOME/.bun/bin/wrangler" ]] || missing_cloud+=("wrangler")
+        [[ -x "$TARGET_HOME/.bun/bin/supabase" ]] || missing_cloud+=("supabase")
+        [[ -x "$TARGET_HOME/.bun/bin/vercel" ]] || missing_cloud+=("vercel")
+
+        if [[ ${#missing_cloud[@]} -eq 0 ]]; then
+            echo "✅ Cloud CLIs: wrangler, supabase, vercel" >&2
+        else
+            echo "⚠️ Cloud CLIs: missing ${missing_cloud[*]} (optional)" >&2
+            ((warnings++))
+        fi
     fi
 
     echo "" >&2
@@ -1025,6 +1169,7 @@ main() {
         install_cli_tools
         install_languages
         install_agents
+        install_cloud_db
         install_stack
         finalize
 
