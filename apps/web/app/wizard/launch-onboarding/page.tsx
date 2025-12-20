@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { PartyPopper, Rocket, BookOpen, ExternalLink, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CommandCard } from "@/components/command-card";
@@ -24,6 +24,21 @@ interface ConfettiParticleData {
   duration: number;
   isRound: boolean;
 }
+
+const CONFETTI_PARTICLES: ConfettiParticleData[] = Array.from({ length: 50 }, (_, i) => {
+  const seed = i + 1;
+
+  return {
+    id: i,
+    delay: (seed * 97) % 1000,
+    left: (seed * 37) % 100,
+    color: CONFETTI_COLORS[seed % CONFETTI_COLORS.length],
+    size: 6 + ((seed * 13) % 7),
+    rotation: (seed * 137) % 360,
+    duration: 2500 + ((seed * 101) % 1500),
+    isRound: seed % 3 === 0,
+  };
+});
 
 // Confetti particle component - all random values passed as props for deterministic rendering
 function ConfettiParticle({ delay, left, color, size, rotation, duration, isRound }: Omit<ConfettiParticleData, 'id'>) {
@@ -51,54 +66,31 @@ function ConfettiParticle({ delay, left, color, size, rotation, duration, isRoun
 }
 
 export default function LaunchOnboardingPage() {
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [confettiParticles, setConfettiParticles] = useState<ConfettiParticleData[]>([]);
-
   // Mark all steps complete on reaching this page
   useEffect(() => {
     markStepComplete(10);
     // Mark all steps as completed
     const allSteps = Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1);
     setCompletedSteps(allSteps);
-
-    // Trigger confetti celebration - calculate all random values once
-    setShowConfetti(true);
-    const particles: ConfettiParticleData[] = Array.from({ length: 50 }, (_, i) => ({
-      id: i,
-      delay: Math.random() * 1000,
-      left: Math.random() * 100,
-      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-      size: 6 + Math.random() * 6,
-      rotation: Math.random() * 360,
-      duration: 2500 + Math.random() * 1500,
-      isRound: Math.random() > 0.5,
-    }));
-    setConfettiParticles(particles);
-
-    // Stop confetti after animation
-    const timer = setTimeout(() => setShowConfetti(false), 4000);
-    return () => clearTimeout(timer);
   }, []);
 
   return (
     <div className="space-y-8">
       {/* Confetti */}
-      {showConfetti && (
-        <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
-          {confettiParticles.map((p) => (
-            <ConfettiParticle
-              key={p.id}
-              delay={p.delay}
-              left={p.left}
-              color={p.color}
-              size={p.size}
-              rotation={p.rotation}
-              duration={p.duration}
-              isRound={p.isRound}
-            />
-          ))}
-        </div>
-      )}
+      <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden="true">
+        {CONFETTI_PARTICLES.map((p) => (
+          <ConfettiParticle
+            key={p.id}
+            delay={p.delay}
+            left={p.left}
+            color={p.color}
+            size={p.size}
+            rotation={p.rotation}
+            duration={p.duration}
+            isRound={p.isRound}
+          />
+        ))}
+      </div>
 
       {/* Celebration header */}
       <div className="space-y-4 text-center">

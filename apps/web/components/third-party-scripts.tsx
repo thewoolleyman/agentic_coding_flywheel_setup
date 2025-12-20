@@ -1,7 +1,7 @@
 'use client';
 
 import Script from 'next/script';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -17,16 +17,9 @@ const CLARITY_PROJECT_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
  */
 export function ThirdPartyScripts() {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Track virtual pageviews for SPA navigation
   useEffect(() => {
-    if (!mounted) return;
-
     // GTM virtual pageview
     if (window.dataLayer) {
       window.dataLayer.push({
@@ -43,7 +36,7 @@ export function ThirdPartyScripts() {
         page_title: document.title,
       });
     }
-  }, [pathname, mounted]);
+  }, [pathname]);
 
   return (
     <>

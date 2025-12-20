@@ -2,8 +2,9 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Apple, Monitor, Sparkles } from "lucide-react";
+import { Apple, Monitor, Sparkles, Laptop, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { markStepComplete } from "@/lib/wizardSteps";
 import {
   useUserOS,
@@ -31,7 +32,7 @@ function OSCard({ icon, title, description, selected, detected, onClick }: OSCar
           : "border-border/50 bg-card/50 hover:border-primary/30 hover:bg-card/80 hover:shadow-md"
       )}
       onClick={onClick}
-      role="button"
+      role="radio"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -39,12 +40,17 @@ function OSCard({ icon, title, description, selected, detected, onClick }: OSCar
           onClick();
         }
       }}
-      aria-pressed={selected}
+      aria-checked={selected}
     >
       {/* Detected badge */}
-      {detected && !selected && (
-        <div className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-primary/20 px-3 py-0.5 text-xs font-medium text-primary">
-          Detected
+      {detected && (
+        <div className={cn(
+          "absolute -top-2 left-1/2 -translate-x-1/2 rounded-full px-3 py-0.5 text-xs font-medium transition-all",
+          selected
+            ? "bg-primary text-primary-foreground"
+            : "bg-primary/20 text-primary"
+        )}>
+          {selected ? "Selected" : "Detected"}
         </div>
       )}
 
@@ -67,7 +73,7 @@ function OSCard({ icon, title, description, selected, detected, onClick }: OSCar
       >
         {icon}
         {selected && (
-          <Sparkles className="absolute -right-1 -top-1 h-5 w-5 text-primary animate-pulse" />
+          <Sparkles className="absolute -right-1 -top-1 h-5 w-5 text-[oklch(0.78_0.16_75)] animate-pulse" />
         )}
       </div>
 
@@ -86,7 +92,7 @@ function OSCard({ icon, title, description, selected, detected, onClick }: OSCar
 
       {/* Selection indicator */}
       {selected && (
-        <div className="absolute bottom-4 right-4 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <div className="absolute bottom-4 right-4 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground animate-scale-in">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
@@ -105,39 +111,47 @@ export default function OSSelectionPage() {
   // Use stored OS if available, otherwise use detected OS
   const selectedOS = storedOS ?? detectedOS;
 
+  // Select OS without navigating
   const handleSelectOS = useCallback(
     (os: OperatingSystem) => {
       setStoredOS(os);
+    },
+    [setStoredOS]
+  );
+
+  // Navigate only when Continue is clicked
+  const handleContinue = useCallback(() => {
+    if (selectedOS) {
       markStepComplete(1);
       setIsNavigating(true);
-
-      // Navigate to next step after brief delay for visual feedback
-      setTimeout(() => {
-        router.push("/wizard/install-terminal");
-      }, 400);
-    },
-    [router, setStoredOS]
-  );
+      router.push("/wizard/install-terminal");
+    }
+  }, [selectedOS, router]);
 
   return (
     <div className="space-y-8">
-      {/* Header - mobile only */}
-      <div className="space-y-2 md:hidden">
-        <h1 className="font-mono text-2xl font-bold tracking-tight">
-          What computer are you using?
-        </h1>
+      {/* Header */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20">
+            <Laptop className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-3xl">
+              What computer are you using?
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              ~30 sec
+            </p>
+          </div>
+        </div>
         <p className="text-muted-foreground">
-          This helps us show you the right commands.
+          This helps us show you the right commands and instructions.
         </p>
       </div>
 
-      {/* Desktop description */}
-      <p className="hidden text-lg text-muted-foreground md:block">
-        Select your operating system so we can show you the right commands and instructions.
-      </p>
-
       {/* OS Options */}
-      <div className="grid gap-6 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-2" role="radiogroup" aria-label="Select your operating system">
         <OSCard
           icon={<Apple className="h-10 w-10" />}
           title="Mac"
@@ -156,19 +170,33 @@ export default function OSSelectionPage() {
         />
       </div>
 
-      {/* Navigation hint */}
-      {isNavigating && (
-        <div className="flex items-center justify-center gap-2 text-sm text-primary">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <span>Loading next step...</span>
-        </div>
-      )}
-
       {/* Tip */}
       <div className="rounded-xl border border-border/30 bg-muted/30 p-4">
         <p className="text-sm text-muted-foreground">
           <span className="font-medium text-foreground">Tip:</span> Your operating system was automatically detected. Click to confirm or select the other option.
         </p>
+      </div>
+
+      {/* Continue button */}
+      <div className="flex justify-end pt-4">
+        <Button
+          onClick={handleContinue}
+          disabled={!selectedOS || isNavigating}
+          size="lg"
+          className="group"
+        >
+          {isNavigating ? (
+            <>
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+              Loading...
+            </>
+          ) : (
+            <>
+              Continue
+              <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );

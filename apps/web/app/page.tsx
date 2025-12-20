@@ -147,12 +147,6 @@ function ToolLogo({ name, color }: { name: string; color: string }) {
 }
 
 export default function HomePage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       {/* Cosmic gradient background */}
@@ -197,8 +191,8 @@ export default function HomePage() {
             <div className="flex flex-col justify-center">
               {/* Badge */}
               <div
-                className={`mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary opacity-0 ${mounted ? "animate-slide-up" : ""}`}
-                style={mounted ? { animationDelay: "0.1s", animationFillMode: "forwards" } : undefined}
+                className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary opacity-0 animate-slide-up"
+                style={{ animationDelay: "0.1s", animationFillMode: "forwards" }}
               >
                 <Sparkles className="h-4 w-4" />
                 <span>Zero to agentic coding in 30 minutes</span>
@@ -206,8 +200,8 @@ export default function HomePage() {
 
               {/* Headline */}
               <h1
-                className={`mb-6 font-mono text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl opacity-0 ${mounted ? "animate-slide-up" : ""}`}
-                style={mounted ? { animationDelay: "0.2s", animationFillMode: "forwards" } : undefined}
+                className="mb-6 font-mono text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl opacity-0 animate-slide-up"
+                style={{ animationDelay: "0.2s", animationFillMode: "forwards" }}
               >
                 <span className="text-gradient-cosmic">AI Agents</span>
                 <br />
@@ -216,8 +210,8 @@ export default function HomePage() {
 
               {/* Subheadline */}
               <p
-                className={`mb-8 max-w-xl text-lg leading-relaxed text-muted-foreground opacity-0 ${mounted ? "animate-slide-up" : ""}`}
-                style={mounted ? { animationDelay: "0.3s", animationFillMode: "forwards" } : undefined}
+                className="mb-8 max-w-xl text-lg leading-relaxed text-muted-foreground opacity-0 animate-slide-up"
+                style={{ animationDelay: "0.3s", animationFillMode: "forwards" }}
               >
                 Transform a fresh Ubuntu VPS into a fully-configured agentic coding
                 environment. Claude, Codex, Gemini — all pre-configured with 30+ modern
@@ -226,8 +220,8 @@ export default function HomePage() {
 
               {/* CTA Buttons */}
               <div
-                className={`flex flex-col gap-3 sm:flex-row sm:items-center opacity-0 ${mounted ? "animate-slide-up" : ""}`}
-                style={mounted ? { animationDelay: "0.4s", animationFillMode: "forwards" } : undefined}
+                className="flex flex-col gap-3 sm:flex-row sm:items-center opacity-0 animate-slide-up"
+                style={{ animationDelay: "0.4s", animationFillMode: "forwards" }}
               >
                 <Button
                   asChild
@@ -256,8 +250,8 @@ export default function HomePage() {
 
               {/* Stats */}
               <div
-                className={`mt-10 flex items-center divide-x divide-border/50 opacity-0 ${mounted ? "animate-slide-up" : ""}`}
-                style={mounted ? { animationDelay: "0.5s", animationFillMode: "forwards" } : undefined}
+                className="mt-10 flex items-center divide-x divide-border/50 opacity-0 animate-slide-up"
+                style={{ animationDelay: "0.5s", animationFillMode: "forwards" }}
               >
                 <StatBadge value="30+" label="Tools Installed" />
                 <StatBadge value="3" label="AI Agents" />
@@ -267,7 +261,7 @@ export default function HomePage() {
 
             {/* Right column - Terminal */}
             <div className="flex items-center justify-center lg:justify-end">
-              {mounted && <AnimatedTerminal />}
+              <AnimatedTerminal />
             </div>
           </div>
         </section>
@@ -297,14 +291,14 @@ export default function HomePage() {
         <section className="mx-auto max-w-7xl px-6 py-24">
           <div className="mb-12 text-center">
             <h2
-              className={`mb-4 font-mono text-3xl font-bold tracking-tight opacity-0 ${mounted ? "animate-slide-up" : ""}`}
-              style={mounted ? { animationDelay: "0.6s", animationFillMode: "forwards" } : undefined}
+              className="mb-4 font-mono text-3xl font-bold tracking-tight opacity-0 animate-slide-up"
+              style={{ animationDelay: "0.6s", animationFillMode: "forwards" }}
             >
               Everything You Need
             </h2>
             <p
-              className={`mx-auto max-w-2xl text-muted-foreground opacity-0 ${mounted ? "animate-slide-up" : ""}`}
-              style={mounted ? { animationDelay: "0.7s", animationFillMode: "forwards" } : undefined}
+              className="mx-auto max-w-2xl text-muted-foreground opacity-0 animate-slide-up"
+              style={{ animationDelay: "0.7s", animationFillMode: "forwards" }}
             >
               A single curl command installs and configures your complete agentic coding environment
             </p>

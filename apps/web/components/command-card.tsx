@@ -171,42 +171,80 @@ export function CommandCard({
       )}
 
       {/* Command area */}
-      <div className="relative flex items-stretch">
+      <div className="relative flex items-stretch min-h-[52px]">
         {/* Terminal icon */}
         <div className="flex items-center justify-center border-r border-border/30 bg-muted/30 px-4">
           <Terminal className="h-4 w-4 text-primary" />
         </div>
 
-        {/* Command text */}
-        <div className="flex flex-1 items-center overflow-x-auto px-4 py-3">
-          <code className="whitespace-nowrap font-mono text-sm text-foreground">
-            {displayCommand}
-          </code>
+        {/* Command text with scroll fade indicators */}
+        <div className="relative flex-1 overflow-hidden">
+          <div className="flex items-center overflow-x-auto px-4 py-3 scrollbar-hide">
+            <code className="whitespace-nowrap font-mono text-sm text-foreground">
+              {displayCommand}
+            </code>
+          </div>
+          {/* Left fade indicator */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-card/80 to-transparent" />
+          {/* Right fade indicator */}
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-card/80 to-transparent" />
         </div>
 
-        {/* Copy button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-auto w-14 shrink-0 rounded-none border-l border-border/30 transition-all duration-300",
-            copied && "bg-[oklch(0.72_0.19_145/0.1)] text-[oklch(0.72_0.19_145)]",
-            copyAnimation && "scale-95"
-          )}
-          onClick={handleCopy}
-          aria-label={copied ? "Copied!" : "Copy command"}
+        {/* Copy button - 52px touch target */}
+        <motion.div
+          className="shrink-0"
+          whileTap={{ scale: 0.95 }}
+          transition={springs.snappy}
         >
-          {copied ? (
-            <Check className="h-4 w-4 animate-scale-in" />
-          ) : (
-            <Copy className="h-4 w-4 transition-transform group-hover:scale-110" />
-          )}
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-[52px] w-14 rounded-none border-l border-border/30",
+              copied && "bg-[oklch(0.72_0.19_145/0.1)] text-[oklch(0.72_0.19_145)]"
+            )}
+            onClick={handleCopy}
+            aria-label={copied ? "Copied!" : "Copy command"}
+            disableMotion
+          >
+            <AnimatePresence mode="wait">
+              {copied ? (
+                <motion.div
+                  key="check"
+                  initial={{ scale: 0, rotate: -45 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  exit={{ scale: 0, rotate: 45 }}
+                  transition={springs.snappy}
+                >
+                  <Check className="h-4 w-4" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="copy"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  transition={springs.snappy}
+                >
+                  <Copy className="h-4 w-4" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Button>
+        </motion.div>
 
         {/* Shimmer effect on copy */}
-        {copyAnimation && (
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent animate-shimmer" />
-        )}
+        <AnimatePresence>
+          {copyAnimation && (
+            <motion.div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent"
+              initial={{ x: "-100%" }}
+              animate={{ x: "100%" }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Checkbox area */}

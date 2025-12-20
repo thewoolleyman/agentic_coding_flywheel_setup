@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Terminal,
@@ -11,7 +11,6 @@ import {
   Cpu,
   Layers,
   Workflow,
-  Target,
   ExternalLink,
   LayoutGrid,
   ShieldCheck,
@@ -24,10 +23,31 @@ import {
   Copy,
   Check,
   Sparkles,
+  Clock,
+  Users,
+  Quote,
+  Rocket,
+  Shield,
+  Code2,
+  ChevronDown,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlywheelVisualization from "@/components/flywheel-visualization";
-import { flywheelTools, flywheelDescription } from "@/lib/flywheel";
+import {
+  flywheelTools,
+  flywheelDescription,
+  workflowScenarios,
+  agentPrompts,
+  synergyExplanations,
+  type FlywheelTool,
+  type WorkflowScenario,
+  type AgentPrompt,
+} from "@/lib/flywheel";
+
+// ============================================================
+// ICON MAPPING
+// ============================================================
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutGrid,
@@ -40,35 +60,432 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   KeyRound,
 };
 
-function PhilosophyCard({
-  title,
-  description,
-  icon: Icon,
-  delay,
-}: {
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  delay: number;
-}) {
+// ============================================================
+// HERO SECTION
+// ============================================================
+
+function HeroSection() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return (
+    <section className="relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-gradient-hero" />
+      <div className="absolute inset-0 bg-grid-pattern opacity-20" />
+      <div className="pointer-events-none absolute left-1/4 top-1/4 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[120px]" />
+      <div className="pointer-events-none absolute right-1/4 bottom-1/4 h-[400px] w-[400px] rounded-full bg-[oklch(0.7_0.2_330/0.08)] blur-[100px]" />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-6 pt-16 pb-20 lg:pt-24 lg:pb-28">
+        {/* Badge */}
+        <div
+          className={`mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 ${mounted ? "opacity-0 animate-slide-up" : ""}`}
+          style={mounted ? { animationDelay: "0.1s", animationFillMode: "forwards" } : undefined}
+        >
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium text-primary">
+            7+ projects • 6+ agents • Autonomous progress
+          </span>
+        </div>
+
+        {/* Main headline */}
+        <h1
+          className={`max-w-4xl font-mono text-3xl font-bold leading-[1.15] tracking-tight sm:text-4xl lg:text-5xl xl:text-6xl ${mounted ? "opacity-0 animate-slide-up" : ""}`}
+          style={mounted ? { animationDelay: "0.2s", animationFillMode: "forwards" } : undefined}
+        >
+          <span className="text-gradient-cosmic">Unheard-of Velocity</span>
+          <br />
+          <span className="text-foreground">in Complex Software</span>
+        </h1>
+
+        {/* Subtitle */}
+        <p
+          className={`mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg lg:text-xl ${mounted ? "opacity-0 animate-slide-up" : ""}`}
+          style={mounted ? { animationDelay: "0.3s", animationFillMode: "forwards" } : undefined}
+        >
+          Eight interconnected tools that enable multiple AI agents to work in parallel,
+          review each other&apos;s work, and make incredible autonomous progress—
+          <span className="text-foreground font-medium">while you&apos;re away</span>.
+        </p>
+
+        {/* Key insight quote */}
+        <div
+          className={`mt-8 max-w-2xl rounded-2xl border border-border/30 bg-card/30 p-5 backdrop-blur-sm ${mounted ? "opacity-0 animate-slide-up" : ""}`}
+          style={mounted ? { animationDelay: "0.4s", animationFillMode: "forwards" } : undefined}
+        >
+          <div className="flex gap-3">
+            <Quote className="h-6 w-6 shrink-0 text-primary/50" />
+            <div>
+              <p className="text-sm leading-relaxed text-foreground italic sm:text-base">
+                &ldquo;The magic isn&apos;t in any single tool. It&apos;s in how they work together.
+                Using three tools is 10x better than using one.&rdquo;
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div
+          className={`mt-10 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:items-center sm:gap-6 lg:gap-8 ${mounted ? "opacity-0 animate-slide-up" : ""}`}
+          style={mounted ? { animationDelay: "0.5s", animationFillMode: "forwards" } : undefined}
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 sm:h-12 sm:w-12">
+              <Users className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-foreground sm:text-2xl">6+</p>
+              <p className="text-xs text-muted-foreground sm:text-sm">Parallel agents</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 sm:h-12 sm:w-12">
+              <Layers className="h-5 w-5 text-emerald-400 sm:h-6 sm:w-6" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-foreground sm:text-2xl">7+</p>
+              <p className="text-xs text-muted-foreground sm:text-sm">Projects simultaneously</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 sm:h-12 sm:w-12">
+              <Star className="h-5 w-5 text-amber-400 sm:h-6 sm:w-6" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-foreground sm:text-2xl">2K+</p>
+              <p className="text-xs text-muted-foreground sm:text-sm">GitHub stars</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 sm:h-12 sm:w-12">
+              <Clock className="h-5 w-5 text-violet-400 sm:h-6 sm:w-6" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-foreground sm:text-2xl">3+ hrs</p>
+              <p className="text-xs text-muted-foreground sm:text-sm">Autonomous work</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// WORKFLOW SECTION
+// ============================================================
+
+function WorkflowCard({ scenario, index }: { scenario: WorkflowScenario; index: number }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
     <div
-      className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-lg card-hover opacity-0 animate-slide-up"
-      style={{ animationDelay: `${delay}s`, animationFillMode: "forwards" }}
+      className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 opacity-0 animate-slide-up"
+      style={{ animationDelay: `${0.1 + index * 0.1}s`, animationFillMode: "forwards" }}
     >
       <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-primary/10 blur-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-      <div className="relative z-10">
-        <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
-          <Icon className="h-6 w-6" />
+
+      <div className="relative p-5 lg:p-6">
+        {/* Header */}
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-bold text-foreground">{scenario.title}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{scenario.description}</p>
+          </div>
+          <div className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+            {scenario.timeframe}
+          </div>
         </div>
-        <h3 className="mb-2 text-lg font-semibold tracking-tight text-foreground">{title}</h3>
-        <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
+
+        {/* Tools involved */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {scenario.steps.map((step, i) => {
+            const tool = flywheelTools.find((t) => t.id === step.tool);
+            if (!tool) return null;
+            const Icon = iconMap[tool.icon] || Zap;
+            return (
+              <div
+                key={i}
+                className={`flex items-center gap-1.5 rounded-full bg-gradient-to-br ${tool.color} px-2.5 py-1`}
+              >
+                <Icon className="h-3 w-3 text-white" />
+                <span className="text-xs font-medium text-white">{tool.shortName}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Expand toggle */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex w-full items-center justify-between rounded-lg bg-muted/30 px-4 py-2.5 text-left transition-colors hover:bg-muted/50"
+        >
+          <span className="text-sm font-medium text-foreground">
+            {isExpanded ? "Hide steps" : "Show workflow steps"}
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {/* Expanded steps */}
+        {isExpanded && (
+          <div className="mt-4 space-y-2.5 animate-scale-in">
+            {scenario.steps.map((step, i) => {
+              const tool = flywheelTools.find((t) => t.id === step.tool);
+              if (!tool) return null;
+              const Icon = iconMap[tool.icon] || Zap;
+
+              return (
+                <div key={i} className="flex gap-3 rounded-xl bg-muted/20 p-3">
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tool.color}`}
+                  >
+                    <Icon className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">{step.action}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">→ {step.result}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Outcome */}
+        <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+          <div className="flex items-start gap-2">
+            <Rocket className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
+            <p className="text-sm font-medium text-emerald-300">{scenario.outcome}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function ToolGridCard({ tool, index }: { tool: (typeof flywheelTools)[0]; index: number }) {
+function WorkflowSection() {
+  return (
+    <section className="border-t border-border/30 bg-card/20 py-16 lg:py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        {/* Section header */}
+        <div className="mb-12 max-w-3xl">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-px w-8 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+              Real Workflows
+            </span>
+          </div>
+          <h2 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+            How the Tools Work Together
+          </h2>
+          <p className="mt-4 text-base text-muted-foreground lg:text-lg">
+            These aren&apos;t hypothetical scenarios. These are actual daily workflows running across
+            7+ projects with multiple AI agents.
+          </p>
+        </div>
+
+        {/* Workflow cards */}
+        <div className="grid gap-5 lg:grid-cols-2">
+          {workflowScenarios.map((scenario, index) => (
+            <WorkflowCard key={scenario.id} scenario={scenario} index={index} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// PROMPTS SECTION
+// ============================================================
+
+function PromptCard({ prompt, index }: { prompt: AgentPrompt; index: number }) {
+  const [copied, setCopied] = useState(false);
+
+  const copyPrompt = () => {
+    navigator.clipboard.writeText(prompt.prompt);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const categoryColors: Record<string, string> = {
+    exploration: "from-cyan-400 to-sky-500",
+    review: "from-violet-400 to-purple-500",
+    improvement: "from-pink-400 to-fuchsia-500",
+    planning: "from-emerald-400 to-teal-500",
+    execution: "from-amber-400 to-orange-500",
+  };
+
+  return (
+    <div
+      className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 opacity-0 animate-slide-up"
+      style={{ animationDelay: `${0.1 + index * 0.05}s`, animationFillMode: "forwards" }}
+    >
+      <div className="p-5">
+        {/* Header */}
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <div
+              className={`mb-2 inline-flex rounded-full bg-gradient-to-r ${categoryColors[prompt.category]} px-2.5 py-0.5 text-[10px] font-semibold text-white`}
+            >
+              {prompt.category.charAt(0).toUpperCase() + prompt.category.slice(1)}
+            </div>
+            <h3 className="text-base font-bold text-foreground">{prompt.title}</h3>
+          </div>
+          <button
+            onClick={copyPrompt}
+            className="shrink-0 rounded-lg bg-muted/50 p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title="Copy prompt"
+          >
+            {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+          </button>
+        </div>
+
+        {/* Prompt text */}
+        <div className="rounded-xl bg-muted/30 p-3 font-mono text-xs leading-relaxed text-muted-foreground">
+          <p className="line-clamp-3">{prompt.prompt}</p>
+        </div>
+
+        {/* When to use */}
+        <p className="mt-3 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">When: </span>
+          {prompt.whenToUse}
+        </p>
+
+        {/* Best with tools */}
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] text-muted-foreground">Best with:</span>
+          {prompt.bestWith.map((toolId) => {
+            const tool = flywheelTools.find((t) => t.id === toolId);
+            if (!tool) return null;
+            return (
+              <span
+                key={toolId}
+                className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground"
+              >
+                {tool.shortName}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PromptsSection() {
+  return (
+    <section className="border-t border-border/30 py-16 lg:py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        {/* Section header */}
+        <div className="mb-12 max-w-3xl">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-px w-8 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+              Battle-Tested Prompts
+            </span>
+          </div>
+          <h2 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+            The Prompts That Power the Workflow
+          </h2>
+          <p className="mt-4 text-base text-muted-foreground lg:text-lg">
+            Copy these prompts to your Stream Deck or command palette. Each takes under a second
+            to execute with a single button press.
+          </p>
+        </div>
+
+        {/* Prompts grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {agentPrompts.map((prompt, index) => (
+            <PromptCard key={prompt.id} prompt={prompt} index={index} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// SYNERGY SECTION
+// ============================================================
+
+function SynergySection() {
+  return (
+    <section className="border-t border-border/30 bg-card/20 py-16 lg:py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        {/* Section header */}
+        <div className="mb-12 text-center">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <div className="h-px w-8 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+              The Flywheel Effect
+            </span>
+            <div className="h-px w-8 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
+          </div>
+          <h2 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+            Using Three Tools is 10x Better Than One
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground lg:text-lg">
+            Each tool amplifies the others. The synergies compound over time.
+          </p>
+        </div>
+
+        {/* Synergy cards */}
+        <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+          {synergyExplanations.map((synergy, index) => (
+            <div
+              key={synergy.title}
+              className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-5 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 opacity-0 animate-slide-up"
+              style={{ animationDelay: `${0.1 + index * 0.1}s`, animationFillMode: "forwards" }}
+            >
+              {/* Tools involved */}
+              <div className="mb-4 flex items-center gap-2">
+                {synergy.tools.map((toolId, i) => {
+                  const tool = flywheelTools.find((t) => t.id === toolId);
+                  if (!tool) return null;
+                  const Icon = iconMap[tool.icon] || Zap;
+                  return (
+                    <div key={toolId} className="flex items-center">
+                      {i > 0 && <span className="mx-1 text-muted-foreground">+</span>}
+                      <div
+                        className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${tool.color}`}
+                      >
+                        <Icon className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="ml-auto rounded-lg bg-emerald-500/10 px-2.5 py-1 text-sm font-bold text-emerald-400">
+                  {synergy.multiplier}
+                </div>
+              </div>
+
+              {/* Title and description */}
+              <h3 className="mb-2 text-base font-bold text-foreground">{synergy.title}</h3>
+              <p className="text-sm text-muted-foreground">{synergy.description}</p>
+
+              {/* Example */}
+              <div className="mt-4 rounded-xl bg-muted/30 p-3">
+                <p className="text-xs text-foreground italic">&ldquo;{synergy.example}&rdquo;</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// TOOLS GRID SECTION
+// ============================================================
+
+function ToolCard({ tool, index }: { tool: FlywheelTool; index: number }) {
   const Icon = iconMap[tool.icon] || Zap;
   const [copied, setCopied] = useState(false);
 
@@ -82,23 +499,24 @@ function ToolGridCard({ tool, index }: { tool: (typeof flywheelTools)[0]; index:
 
   return (
     <div
-      className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 card-hover opacity-0 animate-slide-up"
+      className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 card-hover opacity-0 animate-slide-up"
       style={{ animationDelay: `${0.1 + index * 0.05}s`, animationFillMode: "forwards" }}
     >
-      {/* Gradient glow */}
       <div
         className={`absolute -right-20 -top-20 h-40 w-40 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-30 bg-gradient-to-br ${tool.color}`}
       />
 
-      <div className="relative z-10">
+      <div className="relative p-5">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${tool.color}`}>
-              <Icon className="h-6 w-6 text-white" />
+            <div
+              className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg ${tool.color}`}
+            >
+              <Icon className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">{tool.name}</h3>
+              <h3 className="font-bold text-foreground">{tool.name}</h3>
               <p className="text-xs text-muted-foreground">{tool.tagline}</p>
             </div>
           </div>
@@ -110,11 +528,18 @@ function ToolGridCard({ tool, index }: { tool: (typeof flywheelTools)[0]; index:
           )}
         </div>
 
+        {/* Language badge */}
+        <div className="mb-3">
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {tool.language}
+          </span>
+        </div>
+
         {/* Description */}
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{tool.description}</p>
+        <p className="mb-3 text-sm text-muted-foreground line-clamp-2">{tool.description}</p>
 
         {/* Features */}
-        <ul className="space-y-1 mb-4">
+        <ul className="mb-3 space-y-1">
           {tool.features.slice(0, 2).map((feature, i) => (
             <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
               <Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
@@ -125,14 +550,13 @@ function ToolGridCard({ tool, index }: { tool: (typeof flywheelTools)[0]; index:
 
         {/* Install command */}
         {tool.installCommand && (
-          <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-2 mb-4">
-            <code className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-mono text-muted-foreground">
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-muted/50 p-2">
+            <code className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-muted-foreground">
               curl -fsSL ... | bash
             </code>
             <button
               onClick={copyInstall}
               className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label="Copy install command"
             >
               {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
             </button>
@@ -160,269 +584,139 @@ function ToolGridCard({ tool, index }: { tool: (typeof flywheelTools)[0]; index:
   );
 }
 
-function ConnectionDiagram() {
+function ToolsSection() {
   return (
-    <div className="overflow-x-auto pb-4">
-      <div className="min-w-[600px] rounded-2xl border border-border/50 bg-card/30 p-6">
-        <h3 className="text-center text-lg font-semibold text-foreground mb-6">How Tools Connect</h3>
-
-        <div className="grid grid-cols-4 gap-4">
-          {/* Row 1: Top tools */}
-          <div className="col-start-2 col-span-2 flex justify-center gap-8">
-            <div className="flex flex-col items-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-500">
-                <LayoutGrid className="h-5 w-5 text-white" />
-              </div>
-              <span className="mt-2 text-xs font-bold text-foreground">NTM</span>
-              <span className="text-[10px] text-muted-foreground">Spawns agents</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500">
-                <ShieldCheck className="h-5 w-5 text-white" />
-              </div>
-              <span className="mt-2 text-xs font-bold text-foreground">SLB</span>
-              <span className="text-[10px] text-muted-foreground">Safety gates</span>
-            </div>
+    <section className="border-t border-border/30 py-16 lg:py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        {/* Section header */}
+        <div className="mb-12 text-center">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <div className="h-px w-8 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+              The Complete Stack
+            </span>
+            <div className="h-px w-8 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
           </div>
-
-          {/* Arrow down */}
-          <div className="col-span-4 flex justify-center py-2">
-            <svg width="200" height="40" className="text-primary/30">
-              <path d="M 50 0 L 50 30 M 150 0 L 150 30" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" />
-              <path d="M 50 30 L 100 35 L 150 30" stroke="currentColor" strokeWidth="1" fill="none" />
-            </svg>
-          </div>
-
-          {/* Row 2: Mail (center) */}
-          <div className="col-span-4 flex justify-center">
-            <div className="flex flex-col items-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 shadow-lg shadow-violet-500/20">
-                <Mail className="h-8 w-8 text-white" />
-              </div>
-              <span className="mt-2 text-sm font-bold text-foreground">Agent Mail</span>
-              <span className="text-xs text-muted-foreground">Coordination hub</span>
-            </div>
-          </div>
-
-          {/* Arrow down */}
-          <div className="col-span-4 flex justify-center py-2">
-            <svg width="300" height="40" className="text-primary/30">
-              <path
-                d="M 75 0 L 75 35 M 150 0 L 150 35 M 225 0 L 225 35"
-                stroke="currentColor"
-                strokeWidth="1"
-                strokeDasharray="4 4"
-              />
-            </svg>
-          </div>
-
-          {/* Row 3: BV, UBS, CASS */}
-          <div className="col-span-4 flex justify-center gap-6">
-            <div className="flex flex-col items-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500">
-                <GitBranch className="h-5 w-5 text-white" />
-              </div>
-              <span className="mt-2 text-xs font-bold text-foreground">BV</span>
-              <span className="text-[10px] text-muted-foreground">Task graph</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-red-500">
-                <Bug className="h-5 w-5 text-white" />
-              </div>
-              <span className="mt-2 text-xs font-bold text-foreground">UBS</span>
-              <span className="text-[10px] text-muted-foreground">Bug scanning</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-sky-500">
-                <Search className="h-5 w-5 text-white" />
-              </div>
-              <span className="mt-2 text-xs font-bold text-foreground">CASS</span>
-              <span className="text-[10px] text-muted-foreground">Search</span>
-            </div>
-          </div>
-
-          {/* Arrow down */}
-          <div className="col-span-4 flex justify-center py-2">
-            <svg width="200" height="40" className="text-primary/30">
-              <path d="M 50 0 L 100 35 L 150 0" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" />
-            </svg>
-          </div>
-
-          {/* Row 4: CM */}
-          <div className="col-span-4 flex justify-center">
-            <div className="flex flex-col items-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-pink-400 to-fuchsia-500">
-                <Brain className="h-5 w-5 text-white" />
-              </div>
-              <span className="mt-2 text-xs font-bold text-foreground">CM</span>
-              <span className="text-[10px] text-muted-foreground">Memory</span>
-            </div>
-          </div>
+          <h2 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+            All Eight Flywheel Tools
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground lg:text-lg">
+            Each tool installs in under 30 seconds. Written in Go, Rust, TypeScript, and Python.
+          </p>
         </div>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Data flows between tools creating a self-reinforcing feedback loop
-        </p>
+        {/* Tools grid */}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {flywheelTools.map((tool, index) => (
+            <ToolCard key={tool.id} tool={tool} index={index} />
+          ))}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-export default function FlywheelPage() {
+// ============================================================
+// PHILOSOPHY SECTION
+// ============================================================
+
+function PhilosophySection() {
+  const items = [
+    {
+      icon: Code2,
+      title: "Unix Philosophy",
+      description: "Each tool does one thing well. They compose through JSON, MCP, and Git.",
+      color: "from-cyan-400 to-sky-500",
+    },
+    {
+      icon: Cpu,
+      title: "Agent-First",
+      description: "Every tool has --robot mode. Designed for AI agents to call programmatically.",
+      color: "from-violet-400 to-purple-500",
+    },
+    {
+      icon: Workflow,
+      title: "Self-Reinforcing",
+      description: "The flywheel effect: each tool makes the others more powerful.",
+      color: "from-emerald-400 to-teal-500",
+    },
+    {
+      icon: Shield,
+      title: "Battle-Tested",
+      description: "Born from daily use with 3+ AI agents on production codebases.",
+      color: "from-amber-400 to-orange-500",
+    },
+  ];
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* Background */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-hero" />
-      <div className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-30" />
-
-      {/* Floating orbs */}
-      <div className="pointer-events-none absolute left-1/4 top-1/4 h-96 w-96 rounded-full bg-primary/10 blur-[100px] animate-pulse-glow" />
-      <div
-        className="pointer-events-none absolute right-1/4 bottom-1/4 h-80 w-80 rounded-full bg-[oklch(0.7_0.2_330/0.08)] blur-[80px] animate-pulse-glow"
-        style={{ animationDelay: "1s" }}
-      />
-
-      {/* Navigation */}
-      <nav className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-4">
-          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-            <Link href="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Link>
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/20">
-            <Terminal className="h-5 w-5 text-primary" />
+    <section className="border-t border-border/30 bg-card/20 py-16 lg:py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        {/* Section header */}
+        <div className="mb-12 text-center">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <div className="h-px w-8 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+              Design Philosophy
+            </span>
+            <div className="h-px w-8 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
           </div>
-          <span className="font-mono text-lg font-bold tracking-tight">ACFS</span>
+          <h2 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+            Built From Daily Experience
+          </h2>
         </div>
-        <div className="flex items-center gap-4">
-          <Button asChild size="sm" variant="outline" className="border-primary/30 hover:bg-primary/10">
-            <Link href="/wizard/os-selection">
-              Get Started
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      </nav>
 
-      {/* Main content */}
-      <main className="relative z-10">
-        {/* Hero */}
-        <section className="mx-auto max-w-7xl px-6 pt-12 pb-20">
-          <div
-            className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary opacity-0 animate-slide-up"
-            style={{ animationDelay: "0.1s", animationFillMode: "forwards" }}
-          >
-            <Sparkles className="h-4 w-4" />
-            <span>The complete multi-agent ecosystem</span>
-          </div>
-
-          <h1
-            className="mb-6 font-mono text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl opacity-0 animate-slide-up"
-            style={{ animationDelay: "0.2s", animationFillMode: "forwards" }}
-          >
-            <span className="text-gradient-cosmic">The Flywheel</span>
-          </h1>
-
-          <p
-            className="max-w-3xl text-lg leading-relaxed text-muted-foreground opacity-0 animate-slide-up"
-            style={{ animationDelay: "0.3s", animationFillMode: "forwards" }}
-          >
-            Eight interconnected tools that transform how you work with AI coding agents. Each tool enhances the
-            others, creating a self-reinforcing loop that gets more powerful the more you use it.
-          </p>
-        </section>
-
-        {/* Interactive Flywheel Visualization */}
-        <section className="mx-auto max-w-7xl px-6 pb-24">
-          <FlywheelVisualization />
-        </section>
-
-        {/* Philosophy */}
-        <section className="border-y border-border/30 bg-card/20 py-24">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="mb-12 text-center">
-              <h2 className="mb-4 font-mono text-3xl font-bold tracking-tight text-foreground">Design Philosophy</h2>
-              <p className="mx-auto max-w-2xl text-muted-foreground">
-                Built from daily experience running multiple AI agents on complex software projects
-              </p>
+        {/* Philosophy cards */}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map((item, index) => (
+            <div
+              key={item.title}
+              className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-5 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 opacity-0 animate-slide-up"
+              style={{ animationDelay: `${0.1 + index * 0.1}s`, animationFillMode: "forwards" }}
+            >
+              <div
+                className={`absolute -right-20 -top-20 h-40 w-40 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-30 bg-gradient-to-br ${item.color}`}
+              />
+              <div className="relative">
+                <div className={`mb-4 inline-flex rounded-xl p-3 bg-gradient-to-br ${item.color}`}>
+                  <item.icon className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="mb-2 text-base font-bold text-foreground">{item.title}</h3>
+                <p className="text-sm text-muted-foreground">{item.description}</p>
+              </div>
             </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <PhilosophyCard
-                icon={Layers}
-                title="Unix Philosophy"
-                description="Each tool does one thing exceptionally well. They compose through standard protocols and interfaces."
-                delay={0.1}
-              />
-              <PhilosophyCard
-                icon={Cpu}
-                title="Agent-First"
-                description="Every tool has --robot mode or JSON output. Designed to be called by AI agents, not just humans."
-                delay={0.2}
-              />
-              <PhilosophyCard
-                icon={Workflow}
-                title="Self-Reinforcing"
-                description="The flywheel effect: each tool makes the others more powerful. Using three is 10x better than one."
-                delay={0.3}
-              />
-              <PhilosophyCard
-                icon={Target}
-                title="Battle-Tested"
-                description="Born from daily use building complex software with multiple AI agents simultaneously."
-                delay={0.4}
-              />
-            </div>
-          </div>
-        </section>
+// ============================================================
+// CTA SECTION
+// ============================================================
 
-        {/* Connection Diagram */}
-        <section className="mx-auto max-w-7xl px-6 py-24">
-          <div className="mb-12 text-center">
-            <h2 className="mb-4 font-mono text-3xl font-bold tracking-tight text-foreground">System Architecture</h2>
-            <p className="mx-auto max-w-2xl text-muted-foreground">
-              Agent Mail sits at the center, enabling coordination between all other tools
+function CTASection() {
+  return (
+    <section className="border-t border-border/30 py-16 lg:py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card/50 to-card/30 p-8 text-center backdrop-blur-sm lg:rounded-3xl lg:p-12">
+          <div className="absolute left-1/4 top-1/4 h-48 w-48 rounded-full bg-primary/10 blur-[80px]" />
+          <div className="absolute right-1/4 bottom-1/4 h-36 w-36 rounded-full bg-[oklch(0.7_0.2_330/0.1)] blur-[60px]" />
+
+          <div className="relative z-10">
+            <h2 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+              Ready to 10x Your Velocity?
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground lg:text-lg">
+              The ACFS installer sets up all flywheel tools automatically.
+              From zero to multi-agent workflows in 30 minutes.
             </p>
-          </div>
 
-          <ConnectionDiagram />
-        </section>
-
-        {/* All Tools Grid */}
-        <section className="border-t border-border/30 bg-card/20 py-24">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="mb-12 text-center">
-              <h2 className="mb-4 font-mono text-3xl font-bold tracking-tight text-foreground">All Flywheel Tools</h2>
-              <p className="mx-auto max-w-2xl text-muted-foreground">
-                Quick-install any tool with a single curl command
-              </p>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {flywheelTools.map((tool, index) => (
-                <ToolGridCard key={tool.id} tool={tool} index={index} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="mx-auto max-w-7xl px-6 py-24">
-          <div className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card/50 to-card/30 p-12 text-center backdrop-blur-sm">
-            <h2 className="mb-4 font-mono text-3xl font-bold tracking-tight text-foreground">Ready to Get Started?</h2>
-            <p className="mx-auto mb-8 max-w-2xl text-muted-foreground">
-              The ACFS installer sets up all flywheel tools automatically. From zero to multi-agent workflows in 30
-              minutes.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button asChild size="lg" className="bg-primary text-primary-foreground">
                 <Link href="/wizard/os-selection">
                   Start the Wizard
-                  <ChevronRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
@@ -437,41 +731,97 @@ export default function FlywheelPage() {
               </Button>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// MAIN PAGE
+// ============================================================
+
+export default function FlywheelPage() {
+  return (
+    <div className="relative min-h-screen bg-background">
+      {/* Noise texture overlay */}
+      <div className="pointer-events-none fixed inset-0 z-50 bg-noise" />
+
+      {/* Navigation */}
+      <nav className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:py-6">
+        <div className="flex items-center gap-4">
+          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+            <Link href="/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Link>
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 lg:h-9 lg:w-9">
+            <Terminal className="h-4 w-4 text-primary lg:h-5 lg:w-5" />
+          </div>
+          <span className="font-mono text-base font-bold tracking-tight lg:text-lg">ACFS</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <Button asChild size="sm" variant="outline" className="border-primary/30 hover:bg-primary/10">
+            <Link href="/wizard/os-selection">
+              Get Started
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </nav>
+
+      {/* Main content */}
+      <main>
+        <HeroSection />
+
+        {/* Interactive Flywheel Visualization */}
+        <section className="mx-auto max-w-7xl px-6 py-16 lg:py-24">
+          <FlywheelVisualization />
         </section>
 
-        {/* Footer */}
-        <footer className="border-t border-border/30 py-12">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20">
-                  <Terminal className="h-4 w-4 text-primary" />
-                </div>
-                <span className="font-mono text-sm font-bold">ACFS</span>
-              </div>
-
-              <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                <a
-                  href="https://github.com/Dicklesworthstone/agentic_coding_flywheel_setup"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-colors hover:text-foreground"
-                >
-                  GitHub
-                </a>
-                <Link href="/" className="transition-colors hover:text-foreground">
-                  Home
-                </Link>
-                <Link href="/wizard/os-selection" className="transition-colors hover:text-foreground">
-                  Get Started
-                </Link>
-              </div>
-
-              <p className="text-xs text-muted-foreground">Built for the agentic coding community</p>
-            </div>
-          </div>
-        </footer>
+        <WorkflowSection />
+        <PromptsSection />
+        <SynergySection />
+        <ToolsSection />
+        <PhilosophySection />
+        <CTASection />
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border/30 py-10">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="flex flex-col items-center justify-between gap-5 sm:flex-row">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20">
+                <Terminal className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <span className="font-mono text-sm font-bold">ACFS</span>
+            </div>
+
+            <div className="flex items-center gap-5 text-sm text-muted-foreground">
+              <a
+                href="https://github.com/Dicklesworthstone/agentic_coding_flywheel_setup"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-foreground"
+              >
+                GitHub
+              </a>
+              <Link href="/" className="transition-colors hover:text-foreground">
+                Home
+              </Link>
+              <Link href="/wizard/os-selection" className="transition-colors hover:text-foreground">
+                Get Started
+              </Link>
+            </div>
+
+            <p className="text-xs text-muted-foreground">Built for the agentic coding community</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
