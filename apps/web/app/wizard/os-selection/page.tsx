@@ -6,6 +6,7 @@ import { Apple, Monitor, Sparkles, Laptop, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { markStepComplete } from "@/lib/wizardSteps";
+import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import {
   SimplerGuide,
   GuideSection,
@@ -111,6 +112,13 @@ export default function OSSelectionPage() {
   const detectedOS = useDetectedOS();
   const [isNavigating, setIsNavigating] = useState(false);
 
+  // Analytics tracking for this wizard step
+  const { markComplete } = useWizardAnalytics({
+    step: "os_selection",
+    stepNumber: 1,
+    stepTitle: "OS Selection",
+  });
+
   // Use stored OS if available, otherwise use detected OS
   const selectedOS = storedOS ?? detectedOS;
 
@@ -125,11 +133,12 @@ export default function OSSelectionPage() {
   // Navigate only when Continue is clicked
   const handleContinue = useCallback(() => {
     if (selectedOS) {
+      markComplete({ selected_os: selectedOS });
       markStepComplete(1);
       setIsNavigating(true);
       router.push("/wizard/install-terminal");
     }
-  }, [selectedOS, router]);
+  }, [selectedOS, router, markComplete]);
 
   return (
     <div className="space-y-8">
