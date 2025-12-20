@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { CommandCard } from "@/components/command-card";
 import { AlertCard, OutputPreview } from "@/components/alert-card";
 import { markStepComplete } from "@/lib/wizardSteps";
+import {
+  SimplerGuide,
+  GuideSection,
+  GuideStep,
+  GuideExplain,
+  GuideTip,
+  GuideCaution,
+} from "@/components/simpler-guide";
 
 const QUICK_CHECKS = [
   {
@@ -105,6 +113,138 @@ export default function StatusCheckPage() {
         <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">source ~/.zshrc</code> to
         reload your shell config, then try the doctor again.
       </AlertCard>
+
+      {/* Beginner Guide */}
+      <SimplerGuide>
+        <div className="space-y-6">
+          <GuideExplain term="What is the 'doctor' command?">
+            The &quot;doctor&quot; command is like a health checkup for your VPS. Just like
+            a doctor checks your heart, lungs, and reflexes, this command checks
+            that all the software tools were installed correctly.
+            <br /><br />
+            It goes through a list of tools (programming languages, coding assistants,
+            utilities) and reports which ones are working and which ones might have
+            problems.
+          </GuideExplain>
+
+          <GuideSection title="Step-by-Step: Running the Doctor">
+            <div className="space-y-4">
+              <GuideStep number={1} title="Make sure you're connected to your VPS">
+                Your terminal should show{" "}
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">ubuntu@</code>
+                at the beginning of your prompt. If it shows your laptop&apos;s name,
+                you need to SSH in first!
+              </GuideStep>
+
+              <GuideStep number={2} title="Copy the doctor command">
+                Click the copy button on the{" "}
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">acfs doctor</code>
+                command box above.
+              </GuideStep>
+
+              <GuideStep number={3} title="Paste and run">
+                Paste the command in your terminal and press{" "}
+                <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Enter</kbd>.
+              </GuideStep>
+
+              <GuideStep number={4} title="Read the results">
+                You&apos;ll see a list with checkmarks (✔) or X marks (✘):
+                <ul className="mt-2 space-y-1">
+                  <li>
+                    <span className="text-[oklch(0.72_0.19_145)]">✔ Green checkmarks</span> = Working correctly!
+                  </li>
+                  <li>
+                    <span className="text-destructive">✘ Red X marks</span> = Something needs attention
+                  </li>
+                </ul>
+              </GuideStep>
+            </div>
+          </GuideSection>
+
+          <GuideSection title="Understanding the Quick Spot Checks">
+            <p className="mb-3">
+              We also show some simple commands you can run to double-check specific tools:
+            </p>
+            <ul className="space-y-3">
+              <li>
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">cc --version</code>
+                <br />
+                <span className="text-sm text-muted-foreground">
+                  This checks Claude Code — the AI coding assistant. You should see
+                  a version number like &quot;1.0.3&quot;.
+                </span>
+              </li>
+              <li>
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">bun --version</code>
+                <br />
+                <span className="text-sm text-muted-foreground">
+                  This checks Bun — a fast JavaScript runtime. You should see
+                  something like &quot;1.1.38&quot;.
+                </span>
+              </li>
+              <li>
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">which tmux</code>
+                <br />
+                <span className="text-sm text-muted-foreground">
+                  This checks if tmux is installed. You should see a path like
+                  &quot;/usr/bin/tmux&quot;.
+                </span>
+              </li>
+            </ul>
+          </GuideSection>
+
+          <GuideSection title="What If Something Failed?">
+            <p className="mb-3">
+              Don&apos;t panic! Here are some common fixes:
+            </p>
+            <div className="space-y-4">
+              <div>
+                <p className="font-medium">&quot;Command not found&quot; error</p>
+                <p className="text-sm text-muted-foreground">
+                  This usually means your shell config hasn&apos;t loaded yet. Run this command
+                  to reload it:
+                </p>
+                <code className="mt-1 block rounded bg-muted px-2 py-1 font-mono text-xs">
+                  source ~/.zshrc
+                </code>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Then try the doctor command again.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-medium">A specific tool shows ✘</p>
+                <p className="text-sm text-muted-foreground">
+                  You can try re-running the installer. It&apos;s safe to run multiple times:
+                </p>
+                <code className="mt-1 block rounded bg-muted px-2 py-1 font-mono text-xs">
+                  curl -fsSL &quot;https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main/install.sh&quot; | bash -s -- --yes --mode vibe
+                </code>
+              </div>
+
+              <div>
+                <p className="font-medium">Nothing works at all</p>
+                <p className="text-sm text-muted-foreground">
+                  Make sure you&apos;re connected as the &quot;ubuntu&quot; user (not root).
+                  The installer set up tools for the ubuntu user specifically.
+                </p>
+              </div>
+            </div>
+          </GuideSection>
+
+          <GuideTip>
+            If most things show green checkmarks (✔), you&apos;re good to go! Don&apos;t worry
+            about one or two yellow warnings — those are usually optional tools.
+            Click &quot;Everything looks good!&quot; to continue.
+          </GuideTip>
+
+          <GuideCaution>
+            <strong>If you see many red X marks:</strong> Don&apos;t continue yet. Try the
+            troubleshooting steps above, or re-run the installer. If problems persist,
+            you can ask for help in the project&apos;s GitHub issues.
+          </GuideCaution>
+        </div>
+      </SimplerGuide>
 
       {/* Continue button */}
       <div className="flex justify-end pt-4">
