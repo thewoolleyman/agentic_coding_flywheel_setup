@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "@tanstack/react-form";
 import { Check, AlertCircle, Server, ChevronDown, HardDrive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DetailsSection } from "@/components/alert-card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useVPSIP, isValidIP } from "@/lib/userPreferences";
@@ -15,7 +15,9 @@ const CHECKLIST_ITEMS = [
   { id: "ssh", label: "Pasted my SSH public key" },
   { id: "created", label: "Created the VPS and waited for it to start" },
   { id: "copied-ip", label: "Copied the IP address" },
-];
+] as const;
+
+type ChecklistItemId = typeof CHECKLIST_ITEMS[number]["id"];
 
 interface ProviderGuideProps {
   name: string;
@@ -96,60 +98,49 @@ const PROVIDER_GUIDES = [
   },
 ];
 
+interface FormValues {
+  checklist: Record<ChecklistItemId, boolean>;
+  ipAddress: string;
+}
+
 export default function CreateVPSPage() {
   const router = useRouter();
   const [storedIP, setStoredIP] = useVPSIP();
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
-  const [ipAddress, setIpAddress] = useState(storedIP ?? "");
-  const [ipError, setIpError] = useState<string | null>(null);
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const handleCheckItem = useCallback((itemId: string, checked: boolean) => {
-    setCheckedItems((prev) => {
-      const next = new Set(prev);
-      if (checked) {
-        next.add(itemId);
-      } else {
-        next.delete(itemId);
-      }
-      return next;
-    });
-  }, []);
-
-  const handleIpChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setIpAddress(value);
-      setIpError(null);
-
-      if (value && !isValidIP(value)) {
-        setIpError("Please enter a valid IP address (e.g., 192.168.1.1)");
-      }
+  const form = useForm<FormValues>({
+    defaultValues: {
+      checklist: {
+        ubuntu: false,
+        ssh: false,
+        created: false,
+        "copied-ip": false,
+      },
+      ipAddress: storedIP ?? "",
     },
-    []
+    onSubmit: async ({ value }) => {
+      setStoredIP(value.ipAddress);
+      markStepComplete(5);
+      setIsNavigating(true);
+      router.push("/wizard/ssh-connect");
+    },
+  });
+
+  // Subscribe to form state for UI updates
+  const formState = form.useStore((state) => ({
+    checklist: state.values.checklist,
+    ipAddress: state.values.ipAddress,
+    isSubmitting: state.isSubmitting,
+  }));
+
+  const allChecked = CHECKLIST_ITEMS.every(
+    (item) => formState.checklist[item.id]
   );
-
-  const handleContinue = useCallback(() => {
-    if (!ipAddress) {
-      setIpError("Please enter your VPS IP address");
-      return;
-    }
-    if (!isValidIP(ipAddress)) {
-      setIpError("Please enter a valid IP address");
-      return;
-    }
-
-    setStoredIP(ipAddress);
-    markStepComplete(5);
-    setIsNavigating(true);
-    router.push("/wizard/ssh-connect");
-  }, [ipAddress, router, setStoredIP]);
-
-  const allChecked = CHECKLIST_ITEMS.every((item) =>
-    checkedItems.has(item.id)
-  );
-  const canContinue = allChecked && ipAddress && !ipError;
+  const ipValue = formState.ipAddress;
+  const ipIsValid = ipValue && isValidIP(ipValue);
+  const ipHasError = ipValue && !isValidIP(ipValue);
+  const canContinue = allChecked && ipIsValid && !isNavigating;
 
   return (
     <div className="space-y-8">
@@ -173,103 +164,143 @@ export default function CreateVPSPage() {
         </p>
       </div>
 
-      {/* Universal checklist */}
-      <div className="rounded-xl border border-border/50 bg-card/50 p-4">
-        <h2 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
-          <Server className="h-5 w-5 text-primary" />
-          Setup checklist
-        </h2>
-        <div className="space-y-3">
-          {CHECKLIST_ITEMS.map((item) => (
-            <label
-              key={item.id}
-              className="flex cursor-pointer items-center gap-3"
-            >
-              <Checkbox
-                checked={checkedItems.has(item.id)}
-                onCheckedChange={(checked) =>
-                  handleCheckItem(item.id, checked === true)
-                }
-              />
-              <span
-                className={cn(
-                  "text-sm transition-all",
-                  checkedItems.has(item.id)
-                    ? "text-muted-foreground line-through"
-                    : "text-foreground"
-                )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          form.handleSubmit();
+        }}
+        className="space-y-8"
+      >
+        {/* Universal checklist */}
+        <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+          <h2 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
+            <Server className="h-5 w-5 text-primary" />
+            Setup checklist
+          </h2>
+          <div className="space-y-3">
+            {CHECKLIST_ITEMS.map((item) => (
+              <form.Field
+                key={item.id}
+                name={`checklist.${item.id}` as `checklist.${ChecklistItemId}`}
               >
-                {item.label}
-              </span>
-            </label>
+                {(field) => (
+                  <label className="flex cursor-pointer items-center gap-3">
+                    <Checkbox
+                      checked={field.state.value}
+                      onCheckedChange={(checked) =>
+                        field.handleChange(checked === true)
+                      }
+                    />
+                    <span
+                      className={cn(
+                        "text-sm transition-all",
+                        field.state.value
+                          ? "text-muted-foreground line-through"
+                          : "text-foreground"
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                  </label>
+                )}
+              </form.Field>
+            ))}
+          </div>
+        </div>
+
+        {/* Provider-specific guides */}
+        <div className="space-y-3">
+          <h2 className="font-semibold">Need help with your provider?</h2>
+          {PROVIDER_GUIDES.map((provider) => (
+            <ProviderGuide
+              key={provider.name}
+              name={provider.name}
+              steps={provider.steps}
+              isExpanded={expandedProvider === provider.name}
+              onToggle={() =>
+                setExpandedProvider((prev) =>
+                  prev === provider.name ? null : provider.name
+                )
+              }
+            />
           ))}
         </div>
-      </div>
 
-      {/* Provider-specific guides */}
-      <div className="space-y-3">
-        <h2 className="font-semibold">Need help with your provider?</h2>
-        {PROVIDER_GUIDES.map((provider) => (
-          <ProviderGuide
-            key={provider.name}
-            name={provider.name}
-            steps={provider.steps}
-            isExpanded={expandedProvider === provider.name}
-            onToggle={() =>
-              setExpandedProvider((prev) =>
-                prev === provider.name ? null : provider.name
-              )
-            }
-          />
-        ))}
-      </div>
-
-      {/* IP Address input */}
-      <div className="space-y-3">
-        <h2 className="font-semibold text-foreground">Your VPS IP address</h2>
-        <p className="text-sm text-muted-foreground">
-          Enter the IP address of your new VPS. You&apos;ll find this in your
-          provider&apos;s control panel after the VPS is created.
-        </p>
-        <div className="space-y-2">
-          <input
-            type="text"
-            value={ipAddress}
-            onChange={handleIpChange}
-            placeholder="e.g., 192.168.1.100"
-            className={cn(
-              "w-full rounded-xl border bg-background px-4 py-3 font-mono text-sm outline-none transition-all",
-              "focus:border-primary focus:ring-2 focus:ring-primary/20",
-              ipError
-                ? "border-destructive focus:border-destructive focus:ring-destructive/20"
-                : "border-border/50"
+        {/* IP Address input */}
+        <div className="space-y-3">
+          <h2 className="font-semibold text-foreground">Your VPS IP address</h2>
+          <p className="text-sm text-muted-foreground">
+            Enter the IP address of your new VPS. You&apos;ll find this in your
+            provider&apos;s control panel after the VPS is created.
+          </p>
+          <form.Field
+            name="ipAddress"
+            validators={{
+              onChange: ({ value }) => {
+                if (!value) return undefined;
+                if (!isValidIP(value)) {
+                  return "Please enter a valid IP address (e.g., 192.168.1.1)";
+                }
+                return undefined;
+              },
+              onSubmit: ({ value }) => {
+                if (!value) {
+                  return "Please enter your VPS IP address";
+                }
+                if (!isValidIP(value)) {
+                  return "Please enter a valid IP address";
+                }
+                return undefined;
+              },
+            }}
+          >
+            {(field) => (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="e.g., 192.168.1.100"
+                  className={cn(
+                    "w-full rounded-xl border bg-background px-4 py-3 font-mono text-sm outline-none transition-all",
+                    "focus:border-primary focus:ring-2 focus:ring-primary/20",
+                    field.state.meta.errors.length > 0
+                      ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+                      : "border-border/50"
+                  )}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="flex items-center gap-1 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    {field.state.meta.errors[0]}
+                  </p>
+                )}
+                {field.state.value &&
+                  field.state.meta.errors.length === 0 &&
+                  isValidIP(field.state.value) && (
+                    <p className="flex items-center gap-1 text-sm text-[oklch(0.72_0.19_145)]">
+                      <Check className="h-4 w-4" />
+                      Valid IP address
+                    </p>
+                  )}
+              </div>
             )}
-          />
-          {ipError && (
-            <p className="flex items-center gap-1 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4" />
-              {ipError}
-            </p>
-          )}
-          {ipAddress && !ipError && isValidIP(ipAddress) && (
-            <p className="flex items-center gap-1 text-sm text-[oklch(0.72_0.19_145)]">
-              <Check className="h-4 w-4" />
-              Valid IP address
-            </p>
-          )}
+          </form.Field>
         </div>
-      </div>
 
-      {/* Continue button */}
-      <div className="flex justify-end pt-4">
-        <Button
-          onClick={handleContinue}
-          disabled={!canContinue || isNavigating}
-          size="lg"
-        >
-          {isNavigating ? "Loading..." : "Continue to SSH"}
-        </Button>
-      </div>
+        {/* Continue button */}
+        <div className="flex justify-end pt-4">
+          <Button
+            type="submit"
+            disabled={!canContinue || formState.isSubmitting}
+            size="lg"
+          >
+            {isNavigating || formState.isSubmitting ? "Loading..." : "Continue to SSH"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
