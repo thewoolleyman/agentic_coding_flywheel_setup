@@ -6,3 +6,5 @@ export { Checkbox } from "./ui/checkbox";
 // Custom Components
 export { CommandCard } from "./command-card";
 export type { CommandCardProps } from "./command-card";
+export { Stepper, StepperMobile } from "./stepper";
+export type { StepperProps, WizardStep } from "./stepper";
