@@ -5,23 +5,20 @@ import { useRouter } from "next/navigation";
 import { RefreshCw, Check } from "lucide-react";
 import { Button, Card, CommandCard } from "@/components";
 import { markStepComplete } from "@/lib/wizardSteps";
-import { getVPSIP, getUserOS, type OperatingSystem } from "@/lib/userPreferences";
+import { getVPSIP } from "@/lib/userPreferences";
 
 export default function ReconnectUbuntuPage() {
   const router = useRouter();
   const [vpsIP, setVpsIP] = useState<string | null>(null);
-  const [os, setOS] = useState<OperatingSystem | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     const storedIP = getVPSIP();
-    const storedOS = getUserOS();
     if (!storedIP) {
       router.push("/wizard/create-vps");
       return;
     }
     setVpsIP(storedIP);
-    setOS(storedOS);
   }, [router]);
 
   const handleContinue = useCallback(() => {

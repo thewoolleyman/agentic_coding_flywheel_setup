@@ -14,7 +14,6 @@ import {
 } from "@/lib/userPreferences";
 
 interface OSCardProps {
-  os: OperatingSystem;
   icon: React.ReactNode;
   title: string;
   description: string;
@@ -22,7 +21,7 @@ interface OSCardProps {
   onClick: () => void;
 }
 
-function OSCard({ os, icon, title, description, selected, onClick }: OSCardProps) {
+function OSCard({ icon, title, description, selected, onClick }: OSCardProps) {
   return (
     <Card
       className={cn(
@@ -107,7 +106,6 @@ export default function OSSelectionPage() {
       {/* OS Options */}
       <div className="grid gap-4 sm:grid-cols-2">
         <OSCard
-          os="mac"
           icon={<Apple className="h-7 w-7" />}
           title="Mac"
           description="macOS, MacBook, iMac, Mac Mini, Mac Studio"
@@ -115,7 +113,6 @@ export default function OSSelectionPage() {
           onClick={() => handleSelectOS("mac")}
         />
         <OSCard
-          os="windows"
           icon={<Monitor className="h-7 w-7" />}
           title="Windows"
           description="Windows 10, Windows 11"

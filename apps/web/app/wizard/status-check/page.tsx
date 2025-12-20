@@ -10,17 +10,14 @@ const QUICK_CHECKS = [
   {
     command: "cc --version",
     description: "Check Claude Code is installed",
-    expectedContains: "claude",
   },
   {
     command: "bun --version",
     description: "Check bun is installed",
-    expectedContains: "1.",
   },
   {
     command: "which tmux",
     description: "Check tmux is installed",
-    expectedContains: "/tmux",
   },
 ];
 
