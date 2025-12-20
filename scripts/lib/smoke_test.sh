@@ -33,7 +33,7 @@ TARGET_HOME="${TARGET_HOME:-/home/$TARGET_USER}"
 _smoke_pass() {
     local label="$1"
     echo -e "  ${ACFS_GREEN:-\033[0;32m}✅${ACFS_NC:-\033[0m} $label"
-    ((CRITICAL_PASS++))
+    ((CRITICAL_PASS += 1))
 }
 
 _smoke_fail() {
@@ -43,7 +43,7 @@ _smoke_fail() {
     if [[ -n "$fix" ]]; then
         echo -e "     ${ACFS_GRAY:-\033[0;90m}Fix: $fix${ACFS_NC:-\033[0m}"
     fi
-    ((CRITICAL_FAIL++))
+    ((CRITICAL_FAIL += 1))
 }
 
 _smoke_warn() {
@@ -53,14 +53,14 @@ _smoke_warn() {
     if [[ -n "$note" ]]; then
         echo -e "     ${ACFS_GRAY:-\033[0;90m}$note${ACFS_NC:-\033[0m}"
     fi
-    ((WARNING_COUNT++))
+    ((WARNING_COUNT += 1))
 }
 
 # Non-critical pass (doesn't affect critical count)
 _smoke_info() {
     local label="$1"
     echo -e "  ${ACFS_GREEN:-\033[0;32m}✅${ACFS_NC:-\033[0m} $label"
-    ((NONCRITICAL_PASS++))
+    ((NONCRITICAL_PASS += 1))
 }
 
 _smoke_header() {

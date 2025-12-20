@@ -861,11 +861,11 @@ run_smoke_test() {
     # 1) User is ubuntu
     if [[ "$TARGET_USER" == "ubuntu" ]] && id "$TARGET_USER" &>/dev/null; then
         echo "✅ User: ubuntu" >&2
-        ((critical_passed++))
+        ((critical_passed += 1))
     else
         echo "✖ User: expected ubuntu (TARGET_USER=$TARGET_USER)" >&2
         echo "    Fix: set TARGET_USER=ubuntu and ensure the user exists" >&2
-        ((critical_failed++))
+        ((critical_failed += 1))
     fi
 
     # 2) Shell is zsh
@@ -873,31 +873,31 @@ run_smoke_test() {
     target_shell=$(getent passwd "$TARGET_USER" 2>/dev/null | cut -d: -f7 || true)
     if [[ "$target_shell" == *"zsh"* ]]; then
         echo "✅ Shell: zsh" >&2
-        ((critical_passed++))
+        ((critical_passed += 1))
     else
         echo "✖ Shell: zsh (found: ${target_shell:-unknown})" >&2
         echo "    Fix: sudo chsh -s \"\$(command -v zsh)\" \"$TARGET_USER\"" >&2
-        ((critical_failed++))
+        ((critical_failed += 1))
     fi
 
     # 3) Passwordless sudo works
     if _smoke_run_as_target "sudo -n true" &>/dev/null; then
         echo "✅ Sudo: passwordless" >&2
-        ((critical_passed++))
+        ((critical_passed += 1))
     else
         echo "✖ Sudo: passwordless" >&2
         echo "    Fix: re-run installer with --mode vibe (or configure NOPASSWD for $TARGET_USER)" >&2
-        ((critical_failed++))
+        ((critical_failed += 1))
     fi
 
     # 4) /data/projects exists
     if _smoke_run_as_target "[[ -d /data/projects && -w /data/projects ]]" &>/dev/null; then
         echo "✅ Workspace: /data/projects exists" >&2
-        ((critical_passed++))
+        ((critical_passed += 1))
     else
         echo "✖ Workspace: /data/projects exists" >&2
         echo "    Fix: sudo mkdir -p /data/projects && sudo chown -R \"$TARGET_USER:$TARGET_USER\" /data/projects" >&2
-        ((critical_failed++))
+        ((critical_failed += 1))
     fi
 
     # 5) bun, uv, cargo, go available
@@ -908,11 +908,11 @@ run_smoke_test() {
     command_exists go || missing_lang+=("go")
     if [[ ${#missing_lang[@]} -eq 0 ]]; then
         echo "✅ Languages: bun, uv, cargo, go available" >&2
-        ((critical_passed++))
+        ((critical_passed += 1))
     else
         echo "✖ Languages: missing ${missing_lang[*]}" >&2
         echo "    Fix: re-run installer (phase 5) and check $ACFS_LOG_DIR/install.log" >&2
-        ((critical_failed++))
+        ((critical_failed += 1))
     fi
 
     # 6) claude, codex, gemini commands exist
@@ -922,31 +922,31 @@ run_smoke_test() {
     [[ -x "$TARGET_HOME/.bun/bin/gemini" ]] || missing_agents+=("gemini")
     if [[ ${#missing_agents[@]} -eq 0 ]]; then
         echo "✅ Agents: claude, codex, gemini" >&2
-        ((critical_passed++))
+        ((critical_passed += 1))
     else
         echo "✖ Agents: missing ${missing_agents[*]}" >&2
         echo "    Fix: re-run installer (phase 6) to install agent CLIs" >&2
-        ((critical_failed++))
+        ((critical_failed += 1))
     fi
 
     # 7) ntm command works
     if _smoke_run_as_target "command -v ntm >/dev/null && ntm --help >/dev/null 2>&1"; then
         echo "✅ NTM: working" >&2
-        ((critical_passed++))
+        ((critical_passed += 1))
     else
         echo "✖ NTM: not working" >&2
         echo "    Fix: re-run installer (phase 8) or run NTM installer: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh | bash" >&2
-        ((critical_failed++))
+        ((critical_failed += 1))
     fi
 
     # 8) onboard command exists
     if [[ -x "$TARGET_HOME/.local/bin/onboard" ]]; then
         echo "✅ Onboard: installed" >&2
-        ((critical_passed++))
+        ((critical_passed += 1))
     else
         echo "✖ Onboard: missing" >&2
         echo "    Fix: re-run installer (phase 9) or install onboard to $TARGET_HOME/.local/bin/onboard" >&2
-        ((critical_failed++))
+        ((critical_failed += 1))
     fi
 
     # Non-critical: Agent Mail server can start
@@ -954,7 +954,7 @@ run_smoke_test() {
         echo "✅ Agent Mail: installed (run 'am' to start)" >&2
     else
         echo "⚠️ Agent Mail: not installed (re-run installer phase 8)" >&2
-        ((warnings++))
+        ((warnings += 1))
     fi
 
     # Non-critical: Stack tools respond to --help
@@ -967,35 +967,35 @@ run_smoke_test() {
     done
     if [[ ${#stack_help_fail[@]} -gt 0 ]]; then
         echo "⚠️ Stack tools: --help failed for ${stack_help_fail[*]}" >&2
-        ((warnings++))
+        ((warnings += 1))
     fi
 
     # Non-critical: PostgreSQL service running
     if [[ "$SKIP_POSTGRES" == "true" ]]; then
         echo "⚠️ PostgreSQL: skipped (optional)" >&2
-        ((warnings++))
+        ((warnings += 1))
     elif command_exists systemctl && systemctl is-active --quiet postgresql 2>/dev/null; then
         echo "✅ PostgreSQL: running" >&2
     else
         echo "⚠️ PostgreSQL: not running (optional)" >&2
-        ((warnings++))
+        ((warnings += 1))
     fi
 
     # Non-critical: Vault installed
     if [[ "$SKIP_VAULT" == "true" ]]; then
         echo "⚠️ Vault: skipped (optional)" >&2
-        ((warnings++))
+        ((warnings += 1))
     elif command_exists vault; then
         echo "✅ Vault: installed" >&2
     else
         echo "⚠️ Vault: not installed (optional)" >&2
-        ((warnings++))
+        ((warnings += 1))
     fi
 
     # Non-critical: Cloud CLIs installed
     if [[ "$SKIP_CLOUD" == "true" ]]; then
         echo "⚠️ Cloud CLIs: skipped (optional)" >&2
-        ((warnings++))
+        ((warnings += 1))
     else
         local missing_cloud=()
         [[ -x "$TARGET_HOME/.bun/bin/wrangler" ]] || missing_cloud+=("wrangler")
@@ -1006,7 +1006,7 @@ run_smoke_test() {
             echo "✅ Cloud CLIs: wrangler, supabase, vercel" >&2
         else
             echo "⚠️ Cloud CLIs: missing ${missing_cloud[*]} (optional)" >&2
-            ((warnings++))
+            ((warnings += 1))
         fi
     fi
 

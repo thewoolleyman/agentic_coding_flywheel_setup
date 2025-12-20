@@ -56,9 +56,9 @@ check() {
     local fix="${5:-}"
 
     case "$status" in
-        pass) ((PASS_COUNT++)) ;;
-        warn) ((WARN_COUNT++)) ;;
-        fail) ((FAIL_COUNT++)) ;;
+        pass) ((PASS_COUNT += 1)) ;;
+        warn) ((WARN_COUNT += 1)) ;;
+        fail) ((FAIL_COUNT += 1)) ;;
     esac
 
     if [[ "$JSON_MODE" == "true" ]]; then

@@ -60,19 +60,19 @@ is_fresh_vps() {
 
     # Check for minimal packages
     if ! command -v git &>/dev/null; then
-        ((indicators++))
+        ((indicators += 1))
     fi
 
     # Check for default ubuntu user without customization
     if [[ -f /home/ubuntu/.bashrc ]] && ! grep -q "ACFS" /home/ubuntu/.bashrc 2>/dev/null; then
-        ((indicators++))
+        ((indicators += 1))
     fi
 
     # Check for minimal installed packages
     local pkg_count
     pkg_count=$(dpkg -l 2>/dev/null | wc -l)
     if [[ $pkg_count -lt 500 ]]; then
-        ((indicators++))
+        ((indicators += 1))
     fi
 
     if [[ $indicators -ge 2 ]]; then

@@ -165,7 +165,7 @@ reset_progress() {
 
 # Print header
 print_header() {
-    clear
+    clear 2>/dev/null || true
     if has_gum; then
         gum style \
             --border rounded \
@@ -301,7 +301,7 @@ show_lesson() {
         return 1
     fi
 
-    clear
+    clear 2>/dev/null || true
 
     # Header
     echo -e "${BOLD}${MAGENTA}Lesson $((idx + 1)): ${LESSON_TITLES[$idx]}${NC}"
@@ -382,10 +382,11 @@ show_status() {
     # Progress bar
     local filled=$((completed_count * 5))
     local empty=$((40 - filled))
+    local i
     printf '%s' "${GREEN}"
-    printf '█%.0s' $(seq 1 $filled) 2>/dev/null || true
+    for ((i = 0; i < filled; i++)); do printf '█'; done
     printf '%s' "${DIM}"
-    printf '░%.0s' $(seq 1 $empty) 2>/dev/null || true
+    for ((i = 0; i < empty; i++)); do printf '░'; done
     printf '%s' "${NC}"
     echo " $((completed_count * 100 / 8))%"
     echo ""

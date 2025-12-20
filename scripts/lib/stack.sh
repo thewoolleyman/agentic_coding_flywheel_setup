@@ -348,7 +348,7 @@ verify_stack() {
 
         if _stack_is_installed "$tool"; then
             log_detail "  $cmd: installed"
-            ((installed_count++))
+            ((installed_count += 1))
         else
             log_warn "  Missing: $cmd ($name)"
             all_pass=false
