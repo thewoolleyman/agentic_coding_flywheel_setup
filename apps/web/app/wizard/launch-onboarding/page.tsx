@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { PartyPopper, BookOpen, ExternalLink, Sparkles, ArrowRight, GraduationCap, Terminal } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { CommandCard } from "@/components/command-card";
 import { markStepComplete, setCompletedSteps, TOTAL_STEPS } from "@/lib/wizardSteps";
 import { trackConversion } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";

@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Terminal, ChevronDown } from "lucide-react";
+import { Terminal, ChevronDown, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CommandCard } from "@/components/command-card";
 import { AlertCard, OutputPreview } from "@/components/alert-card";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import { useVPSIP, useUserOS } from "@/lib/userPreferences";
@@ -359,6 +360,18 @@ export default function SSHConnectPage() {
             panel and make sure your public key is added. Then try the &quot;root&quot; command
             shown above as a fallback.
           </GuideCaution>
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <Link href="/learn/ssh-basics" className="flex items-center gap-3 text-sm">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <div>
+                <span className="font-medium text-foreground">Want to learn more about SSH?</span>
+                <p className="text-muted-foreground">
+                  Check out the SSH & Persistence lesson in the Learning Hub →
+                </p>
+              </div>
+            </Link>
+          </div>
         </div>
       </SimplerGuide>
 
