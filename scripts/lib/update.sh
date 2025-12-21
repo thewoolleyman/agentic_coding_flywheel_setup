@@ -36,15 +36,124 @@ UPDATE_STACK=false
 FORCE_MODE=false
 DRY_RUN=false
 VERBOSE=false
+QUIET=false
+YES_MODE=false
+ABORT_ON_FAILURE=false
+
+# Logging
+UPDATE_LOG_DIR="${HOME}/.acfs/logs/updates"
+UPDATE_LOG_FILE=""
+
+# Version tracking
+declare -A VERSION_BEFORE=()
+declare -A VERSION_AFTER=()
+
+# ============================================================
+# Logging Infrastructure
+# ============================================================
+
+init_logging() {
+    mkdir -p "$UPDATE_LOG_DIR"
+    UPDATE_LOG_FILE="$UPDATE_LOG_DIR/$(date '+%Y-%m-%d-%H%M%S').log"
+
+    # Write log header
+    {
+        echo "==============================================="
+        echo "ACFS Update Log"
+        echo "Started: $(date -Iseconds)"
+        echo "User: $(whoami)"
+        echo "Version: $ACFS_VERSION"
+        echo "==============================================="
+        echo ""
+    } >> "$UPDATE_LOG_FILE"
+}
+
+log_to_file() {
+    local msg="$1"
+    if [[ -n "$UPDATE_LOG_FILE" ]]; then
+        echo "[$(date '+%H:%M:%S')] $msg" >> "$UPDATE_LOG_FILE"
+    fi
+}
+
+# ============================================================
+# Version Detection
+# ============================================================
+
+get_version() {
+    local tool="$1"
+    local version=""
+
+    case "$tool" in
+        bun)
+            version=$("$HOME/.bun/bin/bun" --version 2>/dev/null || echo "unknown")
+            ;;
+        rust)
+            version=$("$HOME/.cargo/bin/rustc" --version 2>/dev/null | awk '{print $2}' || echo "unknown")
+            ;;
+        uv)
+            version=$("$HOME/.local/bin/uv" --version 2>/dev/null | awk '{print $2}' || echo "unknown")
+            ;;
+        claude)
+            version=$(claude --version 2>/dev/null | head -1 || echo "unknown")
+            ;;
+        codex)
+            version=$(codex --version 2>/dev/null || echo "unknown")
+            ;;
+        gemini)
+            version=$(gemini --version 2>/dev/null || echo "unknown")
+            ;;
+        wrangler)
+            version=$(wrangler --version 2>/dev/null || echo "unknown")
+            ;;
+        supabase)
+            version=$(supabase --version 2>/dev/null || echo "unknown")
+            ;;
+        vercel)
+            version=$(vercel --version 2>/dev/null || echo "unknown")
+            ;;
+        ntm|ubs|bv|cass|cm|caam|slb)
+            version=$("$tool" --version 2>/dev/null | head -1 || echo "unknown")
+            ;;
+        *)
+            version="unknown"
+            ;;
+    esac
+
+    echo "$version"
+}
+
+capture_version_before() {
+    local tool="$1"
+    VERSION_BEFORE["$tool"]=$(get_version "$tool")
+    log_to_file "Version before [$tool]: ${VERSION_BEFORE[$tool]}"
+}
+
+capture_version_after() {
+    local tool="$1"
+    VERSION_AFTER["$tool"]=$(get_version "$tool")
+    log_to_file "Version after [$tool]: ${VERSION_AFTER[$tool]}"
+
+    local before="${VERSION_BEFORE[$tool]:-unknown}"
+    local after="${VERSION_AFTER[$tool]}"
+
+    if [[ "$before" != "$after" ]]; then
+        log_to_file "Updated [$tool]: $before -> $after"
+        return 0
+    fi
+    return 1
+}
 
 # ============================================================
 # Helper Functions
 # ============================================================
 
 log_section() {
-    echo ""
-    echo -e "${BOLD}${CYAN}$1${NC}"
-    echo "------------------------------------------------------------"
+    log_to_file "=== $1 ==="
+    if [[ "$QUIET" != "true" ]]; then
+        echo ""
+        echo -e "${BOLD}${CYAN}$1${NC}"
+        echo "------------------------------------------------------------"
+    fi
 }
 
 log_item() {
@@ -52,24 +161,27 @@ log_item() {
     local msg="$2"
     local details="${3:-}"
 
+    log_to_file "[$status] $msg${details:+ - $details}"
+
     case "$status" in
         ok)
-            echo -e "  ${GREEN}[ok]${NC} $msg"
-            [[ -n "$details" && "$VERBOSE" == "true" ]] && echo -e "       ${DIM}$details${NC}"
+            [[ "$QUIET" != "true" ]] && echo -e "  ${GREEN}[ok]${NC} $msg"
+            [[ -n "$details" && "$VERBOSE" == "true" && "$QUIET" != "true" ]] && echo -e "       ${DIM}$details${NC}"
             ((SUCCESS_COUNT += 1))
             ;;
         skip)
-            echo -e "  ${DIM}[skip]${NC} $msg"
-            [[ -n "$details" ]] && echo -e "       ${DIM}$details${NC}"
+            [[ "$QUIET" != "true" ]] && echo -e "  ${DIM}[skip]${NC} $msg"
+            [[ -n "$details" && "$QUIET" != "true" ]] && echo -e "       ${DIM}$details${NC}"
             ((SKIP_COUNT += 1))
             ;;
         fail)
+            # Always show failures even in quiet mode
             echo -e "  ${RED}[fail]${NC} $msg"
             [[ -n "$details" ]] && echo -e "       ${DIM}$details${NC}"
             ((FAIL_COUNT += 1))
             ;;
         run)
-            echo -e "  ${YELLOW}[...]${NC} $msg"
+            [[ "$QUIET" != "true" ]] && echo -e "  ${YELLOW}[...]${NC} $msg"
             ;;
     esac
 }
@@ -80,6 +192,8 @@ run_cmd() {
     local cmd_display=""
     cmd_display=$(printf '%q ' "$@")
 
+    log_to_file "Running: $cmd_display"
+
     if [[ "$DRY_RUN" == "true" ]]; then
         log_item "skip" "$desc" "dry-run: $cmd_display"
         return 0
@@ -87,16 +201,35 @@ run_cmd() {
 
     log_item "run" "$desc"
 
-    if "$@" >/dev/null 2>&1; then
-        # Move cursor up and overwrite
-        echo -e "\033[1A\033[2K  ${GREEN}[ok]${NC} $desc"
+    local output=""
+    local exit_code=0
+    output=$("$@" 2>&1) || exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        # Move cursor up and overwrite (only if not in quiet mode)
+        if [[ "$QUIET" != "true" ]]; then
+            echo -e "\033[1A\033[2K  ${GREEN}[ok]${NC} $desc"
+        fi
+        log_to_file "Success: $desc"
+        [[ -n "$output" ]] && log_to_file "Output: $output"
         ((SUCCESS_COUNT += 1))
         return 0
     else
-        echo -e "\033[1A\033[2K  ${RED}[fail]${NC} $desc"
+        if [[ "$QUIET" != "true" ]]; then
+            echo -e "\033[1A\033[2K  ${RED}[fail]${NC} $desc"
+        else
+            echo -e "  ${RED}[fail]${NC} $desc"
+        fi
+        log_to_file "Failed: $desc (exit code: $exit_code)"
+        [[ -n "$output" ]] && log_to_file "Output: $output"
         ((FAIL_COUNT += 1))
-        # Do not propagate failure under `set -e`; we want to continue and
-        # summarize all failures at the end via FAIL_COUNT.
+
+        # Handle abort-on-failure
+        if [[ "$ABORT_ON_FAILURE" == "true" ]]; then
+            echo -e "${RED}Aborting due to failure (--abort-on-failure)${NC}"
+            log_to_file "ABORT: Stopping due to --abort-on-failure"
+            exit 1
+        fi
         return 0
     fi
 }
@@ -362,20 +495,52 @@ update_stack() {
 # ============================================================
 
 print_summary() {
-    echo ""
-    echo "============================================================"
-    echo -e "Summary: ${GREEN}$SUCCESS_COUNT updated${NC}, ${DIM}$SKIP_COUNT skipped${NC}, ${RED}$FAIL_COUNT failed${NC}"
-    echo ""
-
-    if [[ $FAIL_COUNT -eq 0 ]]; then
-        echo -e "${GREEN}All updates completed successfully!${NC}"
-    else
-        echo -e "${YELLOW}Some updates failed. Check output above.${NC}"
+    # Log footer to file
+    if [[ -n "$UPDATE_LOG_FILE" ]]; then
+        {
+            echo ""
+            echo "==============================================="
+            echo "Summary"
+            echo "==============================================="
+            echo "Updated: $SUCCESS_COUNT"
+            echo "Skipped: $SKIP_COUNT"
+            echo "Failed:  $FAIL_COUNT"
+            echo ""
+            echo "Completed: $(date -Iseconds)"
+            echo "==============================================="
+        } >> "$UPDATE_LOG_FILE"
     fi
 
-    if [[ "$DRY_RUN" == "true" ]]; then
+    # Console output (respects quiet mode for success, always shows failures)
+    if [[ "$QUIET" != "true" ]]; then
         echo ""
-        echo -e "${DIM}(dry-run mode - no changes were made)${NC}"
+        echo "============================================================"
+        echo -e "Summary: ${GREEN}$SUCCESS_COUNT updated${NC}, ${DIM}$SKIP_COUNT skipped${NC}, ${RED}$FAIL_COUNT failed${NC}"
+        echo ""
+
+        if [[ $FAIL_COUNT -eq 0 ]]; then
+            echo -e "${GREEN}All updates completed successfully!${NC}"
+        else
+            echo -e "${YELLOW}Some updates failed. Check output above.${NC}"
+        fi
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo ""
+            echo -e "${DIM}(dry-run mode - no changes were made)${NC}"
+        fi
+
+        # Show log location
+        if [[ -n "$UPDATE_LOG_FILE" ]]; then
+            echo ""
+            echo -e "${DIM}Log: $UPDATE_LOG_FILE${NC}"
+        fi
+    elif [[ $FAIL_COUNT -gt 0 ]]; then
+        # In quiet mode, still report failures
+        echo ""
+        echo -e "${RED}Update failed: $FAIL_COUNT error(s)${NC}"
+        if [[ -n "$UPDATE_LOG_FILE" ]]; then
+            echo -e "${DIM}See: $UPDATE_LOG_FILE${NC}"
+        fi
     fi
 }
 
@@ -391,23 +556,29 @@ Usage:
   acfs update [options]
 
 Options:
-  --apt-only       Only update system packages
-  --agents-only    Only update coding agents
-  --cloud-only     Only update cloud CLIs
-  --stack          Include Dicklesworthstone stack updates
-  --no-apt         Skip apt updates
-  --no-agents      Skip agent updates
-  --no-cloud       Skip cloud CLI updates
-  --force          Install missing tools
-  --dry-run        Show what would be updated without making changes
-  --verbose        Show more details
-  --help           Show this help
+  --apt-only         Only update system packages
+  --agents-only      Only update coding agents
+  --cloud-only       Only update cloud CLIs
+  --stack            Include Dicklesworthstone stack updates
+  --no-apt           Skip apt updates
+  --no-agents        Skip agent updates
+  --no-cloud         Skip cloud CLI updates
+  --force            Install missing tools
+  --dry-run          Show what would be updated without making changes
+  --yes, -y          Non-interactive mode (skip all prompts)
+  --quiet, -q        Minimal output (only show errors)
+  --verbose, -v      Show more details
+  --abort-on-failure Stop immediately on first failure
+  --continue         Continue after failures (default)
+  --help, -h         Show this help
 
 Examples:
   acfs update                  # Update apt, agents, and cloud CLIs
   acfs update --stack          # Include stack tools
   acfs update --agents-only    # Only update coding agents
   acfs update --dry-run        # Preview changes
+  acfs update --yes --quiet    # Automated mode with minimal output
+  acfs update --abort-on-failure --stack  # Stop on first error
 
 What gets updated:
   - System packages (apt update/upgrade)
@@ -417,6 +588,9 @@ What gets updated:
   - Rust toolchain
   - uv (Python tools)
   - Dicklesworthstone stack (with --stack flag)
+
+Logs:
+  Update logs are saved to ~/.acfs/logs/updates/
 EOF
 }
 
@@ -473,6 +647,22 @@ main() {
                 VERBOSE=true
                 shift
                 ;;
+            --quiet|-q)
+                QUIET=true
+                shift
+                ;;
+            --yes|-y)
+                YES_MODE=true
+                shift
+                ;;
+            --abort-on-failure)
+                ABORT_ON_FAILURE=true
+                shift
+                ;;
+            --continue)
+                ABORT_ON_FAILURE=false
+                shift
+                ;;
             --help|-h)
                 usage
                 exit 0
@@ -485,14 +675,19 @@ main() {
         esac
     done
 
-    # Header
-    echo ""
-    echo -e "${BOLD}ACFS Update v$ACFS_VERSION${NC}"
-    echo -e "User: $(whoami)"
-    echo -e "Date: $(date '+%Y-%m-%d %H:%M')"
+    # Initialize logging
+    init_logging
 
-    if [[ "$DRY_RUN" == "true" ]]; then
-        echo -e "${YELLOW}Mode: dry-run${NC}"
+    # Header
+    if [[ "$QUIET" != "true" ]]; then
+        echo ""
+        echo -e "${BOLD}ACFS Update v$ACFS_VERSION${NC}"
+        echo -e "User: $(whoami)"
+        echo -e "Date: $(date '+%Y-%m-%d %H:%M')"
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo -e "${YELLOW}Mode: dry-run${NC}"
+        fi
     fi
 
     # Run updates
