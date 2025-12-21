@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw, Check, UserCheck } from "lucide-react";
+import { RefreshCw, Check, UserCheck, BookOpen } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CommandCard } from "@/components/command-card";
 import { OutputPreview } from "@/components/alert-card";
@@ -198,6 +199,18 @@ export default function ReconnectUbuntuPage() {
             If you were already connected as ubuntu (skip button above applies to you),
             just click &quot;Skip&quot; or &quot;Continue&quot;; you don&apos;t need to do anything!
           </GuideTip>
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <Link href="/learn/linux-basics" className="flex items-center gap-3 text-sm">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <div>
+                <span className="font-medium text-foreground">New to Linux?</span>
+                <p className="text-muted-foreground">
+                  Learn the basics of navigating the filesystem →
+                </p>
+              </div>
+            </Link>
+          </div>
         </div>
       </SimplerGuide>
 

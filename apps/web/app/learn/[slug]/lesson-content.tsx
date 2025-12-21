@@ -15,6 +15,7 @@ import {
   Clock,
   GraduationCap,
   Home,
+  Terminal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -186,6 +187,16 @@ export function LessonContent({ lesson, content }: Props) {
                 <p className="mt-2 text-lg text-muted-foreground">
                   {lesson.description}
                 </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <span>Need to revisit setup?</span>
+                  <Link
+                    href="/wizard/os-selection"
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                  >
+                    <Terminal className="h-4 w-4" />
+                    Open the Setup Wizard
+                  </Link>
+                </div>
               </div>
 
               {/* Markdown content */}

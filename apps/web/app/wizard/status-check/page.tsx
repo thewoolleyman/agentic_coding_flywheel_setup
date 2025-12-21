@@ -10,7 +10,9 @@ import {
   Bot,
   Cloud,
   Wrench,
+  BookOpen,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CommandCard } from "@/components/command-card";
 import { AlertCard, OutputPreview } from "@/components/alert-card";
@@ -369,6 +371,18 @@ export default function StatusCheckPage() {
             troubleshooting steps above, or re-run the installer. If problems persist,
             you can ask for help in the project&apos;s GitHub issues.
           </GuideCaution>
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <Link href="/learn/welcome" className="flex items-center gap-3 text-sm">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <div>
+                <span className="font-medium text-foreground">New to this environment?</span>
+                <p className="text-muted-foreground">
+                  Start with the Welcome lesson to understand what you now have →
+                </p>
+              </div>
+            </Link>
+          </div>
         </div>
       </SimplerGuide>
 
