@@ -303,6 +303,38 @@ export default function RentVPSPage() {
             </div>
           </GuideSection>
 
+          <GuideSection title="The Reality of VPS Performance">
+            <p className="mb-3 text-sm text-muted-foreground">
+              A VPS isn&apos;t a dedicated machine—it&apos;s a slice of a larger physical server shared
+              with other customers. Understanding this helps you set realistic expectations:
+            </p>
+            <ul className="space-y-3 text-sm">
+              <li>
+                <strong>Shared resources:</strong> Your &quot;16 vCPU&quot; VPS shares the physical CPU
+                with other tenants. When neighbors run heavy workloads, your performance dips.
+                This is normal and expected.
+              </li>
+              <li>
+                <strong>Overselling is common:</strong> Providers bet that not everyone uses their
+                full allocation simultaneously. When you&apos;re sleeping, they effectively reuse that
+                capacity. This is how they offer low prices—and why performance can be inconsistent.
+              </li>
+              <li>
+                <strong>Dedicated servers exist:</strong> If you want guaranteed, consistent performance,
+                bare-metal dedicated servers are available—but they cost 3-10× more. For most users,
+                VPS is the right price/performance tradeoff.
+              </li>
+            </ul>
+            <div className="mt-4 rounded-lg border border-[oklch(0.65_0.15_220/0.3)] bg-[oklch(0.65_0.15_220/0.08)] p-3">
+              <p className="text-sm text-muted-foreground">
+                <strong>💡 This is another reason to get 64GB:</strong> You won&apos;t always get the full
+                performance you&apos;d expect from those specs. Having headroom means your agents keep
+                running smoothly even when the underlying hardware is contested. Think of the extra
+                RAM as insurance against noisy neighbors.
+              </p>
+            </div>
+          </GuideSection>
+
           <GuideSection title="The Full Investment">
             <p className="mb-4 text-sm text-muted-foreground">
               To use the agentic coding approach, you&apos;ll need subscriptions to AI services
