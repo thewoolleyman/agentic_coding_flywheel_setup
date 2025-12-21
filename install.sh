@@ -2378,7 +2378,8 @@ main() {
             0) # Resume - state functions will skip completed phases
                 log_info "Resuming installation from last checkpoint..."
                 ;;
-            1) # Fresh install - initialize new state
+            1) # Fresh install - confirm before proceeding, then initialize state
+                confirm_or_exit
                 if type -t state_init &>/dev/null; then
                     state_init
                 fi
