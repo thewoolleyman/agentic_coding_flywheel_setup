@@ -354,77 +354,123 @@ test_legacy_skip_cloud() {
 # Feature Flag Tests (mjt.5.6)
 # ============================================================
 
-test_feature_flag_global_default() {
-    local name="Feature flag global default is 1 (use generated)"
+test_feature_flag_default_unmigrated() {
+    local name="Default: unmigrated categories use legacy"
     reset_selection
 
-    # Ensure global flag is unset to test default
+    unset ACFS_GENERATED_MIGRATED_CATEGORIES
+    unset ACFS_USE_GENERATED_LANG
     unset ACFS_USE_GENERATED
+
+    # Re-source to pick up default flag behavior
+    # shellcheck disable=SC1090
     source "$SCRIPT_DIR/install_helpers.sh"
+
+    if ! acfs_use_generated_for_category "lang"; then
+        test_pass "$name"
+    else
+        test_fail "$name" "Expected legacy for unmigrated category"
+    fi
+}
+
+test_feature_flag_migrated_default() {
+    local name="Default: migrated categories use generated"
+    reset_selection
+
+    ACFS_GENERATED_MIGRATED_CATEGORIES="lang,cli"
+    unset ACFS_USE_GENERATED
+    unset ACFS_USE_GENERATED_LANG
+
+    # shellcheck disable=SC1090
+    source "$SCRIPT_DIR/install_helpers.sh"
+
+    if acfs_use_generated_for_category "lang" && acfs_use_generated_for_category "cli"; then
+        if ! acfs_use_generated_for_category "agents"; then
+            test_pass "$name"
+            return
+        fi
+    fi
+
+    test_fail "$name"
+}
+
+test_feature_flag_global_disable() {
+    local name="Global=0 forces legacy (even for migrated categories)"
+    reset_selection
+
+    ACFS_GENERATED_MIGRATED_CATEGORIES="lang"
+    ACFS_USE_GENERATED=0
+    unset ACFS_USE_GENERATED_LANG
+
+    if ! acfs_use_generated_for_category "lang"; then
+        test_pass "$name"
+    else
+        test_fail "$name" "Expected legacy when global=0"
+    fi
+}
+
+test_feature_flag_per_category_override_enable() {
+    local name="Per-category=1 overrides global=0"
+    reset_selection
+
+    unset ACFS_GENERATED_MIGRATED_CATEGORIES
+    ACFS_USE_GENERATED=0
+    ACFS_USE_GENERATED_LANG=1
 
     if acfs_use_generated_for_category "lang"; then
         test_pass "$name"
     else
-        test_fail "$name" "Expected generated=true by default"
+        test_fail "$name" "Expected generated when per-category=1 even if global=0"
     fi
+
+    unset ACFS_USE_GENERATED_LANG
 }
 
-test_feature_flag_global_disable() {
-    local name="Feature flag global=0 disables generated for all"
+test_feature_flag_per_category_override_disable() {
+    local name="Per-category=0 overrides migrated default"
     reset_selection
-    ACFS_USE_GENERATED=0
 
-    if ! acfs_use_generated_for_category "lang"; then
-        test_pass "$name"
-    else
-        test_fail "$name" "Expected generated=false when global=0"
-    fi
-    ACFS_USE_GENERATED=1
-}
-
-test_feature_flag_per_category_override() {
-    local name="Per-category flag overrides global"
-    reset_selection
+    ACFS_GENERATED_MIGRATED_CATEGORIES="lang"
     ACFS_USE_GENERATED=1
     ACFS_USE_GENERATED_LANG=0
 
     if ! acfs_use_generated_for_category "lang"; then
-        if acfs_use_generated_for_category "base"; then
-            test_pass "$name"
-        else
-            test_fail "$name" "base should still use generated"
-        fi
+        test_pass "$name"
     else
-        test_fail "$name" "Expected lang=false when per-category=0"
+        test_fail "$name" "Expected legacy when per-category=0"
     fi
+
     unset ACFS_USE_GENERATED_LANG
 }
 
 test_feature_flag_module_extraction() {
-    local name="acfs_use_generated_for_module extracts category"
+    local name="acfs_use_generated_for_module derives category from module id"
     reset_selection
+
+    ACFS_GENERATED_MIGRATED_CATEGORIES="lang"
     ACFS_USE_GENERATED=1
-    ACFS_USE_GENERATED_AGENTS=0
+    unset ACFS_USE_GENERATED_LANG
 
     if ! acfs_use_generated_for_module "agents.claude"; then
         if acfs_use_generated_for_module "lang.bun"; then
             test_pass "$name"
-        else
-            test_fail "$name" "lang.bun should use generated"
+            return
         fi
-    else
-        test_fail "$name" "agents.claude should not use generated"
     fi
-    unset ACFS_USE_GENERATED_AGENTS
+
+    test_fail "$name"
 }
 
 test_feature_flag_get_installer() {
-    local name="acfs_get_module_installer returns function name"
+    local name="acfs_get_module_installer returns function name when enabled"
     reset_selection
+
+    ACFS_GENERATED_MIGRATED_CATEGORIES="lang"
     ACFS_USE_GENERATED=1
+    unset ACFS_USE_GENERATED_LANG
 
     local func
-    func=$(acfs_get_module_installer "lang.bun")
+    func="$(acfs_get_module_installer "lang.bun")"
 
     if [[ "$func" == "install_lang_bun" ]]; then
         test_pass "$name"
@@ -436,16 +482,20 @@ test_feature_flag_get_installer() {
 test_feature_flag_get_installer_disabled() {
     local name="acfs_get_module_installer returns empty when disabled"
     reset_selection
+
+    ACFS_GENERATED_MIGRATED_CATEGORIES="lang"
+    ACFS_USE_GENERATED=1
     ACFS_USE_GENERATED_LANG=0
 
     local func
-    func=$(acfs_get_module_installer "lang.bun")
+    func="$(acfs_get_module_installer "lang.bun")"
 
     if [[ -z "$func" ]]; then
         test_pass "$name"
     else
         test_fail "$name" "Expected empty string, got '$func'"
     fi
+
     unset ACFS_USE_GENERATED_LANG
 }
 
@@ -473,9 +523,11 @@ test_print_plan_deterministic
 test_legacy_skip_vault
 test_legacy_skip_postgres
 test_legacy_skip_cloud
-test_feature_flag_global_default
+test_feature_flag_default_unmigrated
+test_feature_flag_migrated_default
 test_feature_flag_global_disable
-test_feature_flag_per_category_override
+test_feature_flag_per_category_override_enable
+test_feature_flag_per_category_override_disable
 test_feature_flag_module_extraction
 test_feature_flag_get_installer
 test_feature_flag_get_installer_disabled

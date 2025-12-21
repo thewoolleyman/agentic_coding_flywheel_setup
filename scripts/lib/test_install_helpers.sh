@@ -52,6 +52,22 @@ reset_selection() {
     declare -gA ACFS_PLAN_EXCLUDE_REASON=()
 }
 
+reset_generated_flags() {
+    unset ACFS_USE_GENERATED \
+        ACFS_USE_GENERATED_BASE \
+        ACFS_USE_GENERATED_USERS \
+        ACFS_USE_GENERATED_SHELL \
+        ACFS_USE_GENERATED_CLI \
+        ACFS_USE_GENERATED_LANG \
+        ACFS_USE_GENERATED_TOOLS \
+        ACFS_USE_GENERATED_AGENTS \
+        ACFS_USE_GENERATED_DB \
+        ACFS_USE_GENERATED_CLOUD \
+        ACFS_USE_GENERATED_STACK \
+        ACFS_USE_GENERATED_ACFS
+    ACFS_GENERATED_DEFAULT_CATEGORIES=()
+}
+
 # ============================================================
 # Test Cases: Default Selection
 # ============================================================
@@ -549,6 +565,51 @@ test_should_run_module_false() {
 }
 
 # ============================================================
+# Test Cases: Generated Category Flags (mjt.5.6)
+# ============================================================
+
+test_generated_defaults() {
+    local name="Generated defaults honor ACFS_GENERATED_DEFAULT_CATEGORIES"
+    reset_generated_flags
+    ACFS_GENERATED_DEFAULT_CATEGORIES=("shell" "lang")
+
+    if acfs_use_generated_category "shell" 2>/dev/null && ! acfs_use_generated_category "cloud" 2>/dev/null; then
+        test_pass "$name"
+        return
+    fi
+    test_fail "$name"
+}
+
+test_generated_global_override() {
+    local name="Global ACFS_USE_GENERATED overrides defaults"
+    reset_generated_flags
+    ACFS_GENERATED_DEFAULT_CATEGORIES=("shell")
+    ACFS_USE_GENERATED=1
+
+    if acfs_use_generated_category "cloud" 2>/dev/null; then
+        ACFS_USE_GENERATED=0
+        if ! acfs_use_generated_category "shell" 2>/dev/null; then
+            test_pass "$name"
+            return
+        fi
+    fi
+    test_fail "$name"
+}
+
+test_generated_per_category_override() {
+    local name="Per-category ACFS_USE_GENERATED_* overrides global"
+    reset_generated_flags
+    ACFS_USE_GENERATED=0
+    ACFS_USE_GENERATED_SHELL=1
+
+    if acfs_use_generated_category "shell" 2>/dev/null && ! acfs_use_generated_category "lang" 2>/dev/null; then
+        test_pass "$name"
+        return
+    fi
+    test_fail "$name"
+}
+
+# ============================================================
 # Run Tests
 # ============================================================
 
@@ -604,6 +665,11 @@ test_legacy_flags_affect_selection
 # should_run_module tests
 test_should_run_module_true
 test_should_run_module_false
+
+# Generated category flag tests (mjt.5.6)
+test_generated_defaults
+test_generated_global_override
+test_generated_per_category_override
 
 echo ""
 echo "====================================="
