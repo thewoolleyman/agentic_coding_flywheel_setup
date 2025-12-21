@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 
+function urlPathWithOptionalQuery(pathname: string): RegExp {
+  const escaped = pathname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`${escaped}(\\?.*)?$`);
+}
+
 /**
  * Agent Flywheel Wizard Flow E2E Tests
  *
@@ -33,7 +38,7 @@ test.describe("Wizard Flow", () => {
     await page.getByRole("link", { name: /start the wizard/i }).click();
 
     // Should be on step 1 (OS selection)
-    await expect(page).toHaveURL("/wizard/os-selection");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/os-selection"));
     await expect(page.locator("h1").first()).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 }).first()).toContainText(/OS|operating|computer/i);
   });
@@ -54,7 +59,8 @@ test.describe("Wizard Flow", () => {
     await continueBtn.click();
 
     // Should navigate to step 2
-    await expect(page).toHaveURL("/wizard/install-terminal");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/install-terminal"));
+    expect(new URL(page.url()).searchParams.get("os")).toBe("mac");
   });
 
   test("should complete step 2: Install terminal", async ({ page }) => {
@@ -65,7 +71,7 @@ test.describe("Wizard Flow", () => {
     await page.getByRole('button', { name: /continue/i }).click();
 
     // Now on step 2
-    await expect(page).toHaveURL("/wizard/install-terminal");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/install-terminal"));
     await page.waitForLoadState("networkidle");
     await expect(page.locator("h1").first()).toContainText(/terminal/i);
 
@@ -73,7 +79,8 @@ test.describe("Wizard Flow", () => {
     await page.getByRole('button', { name: /continue/i }).click();
 
     // Should navigate to step 3
-    await expect(page).toHaveURL("/wizard/generate-ssh-key");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/generate-ssh-key"));
+    expect(new URL(page.url()).searchParams.get("os")).toBe("mac");
   });
 
   test("should complete step 3: Generate SSH key", async ({ page }) => {
@@ -84,14 +91,15 @@ test.describe("Wizard Flow", () => {
     await page.getByRole('button', { name: /continue/i }).click();
 
     // Now on step 3
-    await expect(page).toHaveURL("/wizard/generate-ssh-key");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/generate-ssh-key"));
     await expect(page.locator("h1").first()).toContainText(/SSH/i);
 
     // Click the step 3 specific button
     await page.click('button:has-text("I copied my public key")');
 
     // Should navigate to step 4
-    await expect(page).toHaveURL("/wizard/rent-vps");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/rent-vps"));
+    expect(new URL(page.url()).searchParams.get("os")).toBe("mac");
   });
 
   test("should complete step 4: Rent VPS", async ({ page }) => {
@@ -103,14 +111,15 @@ test.describe("Wizard Flow", () => {
     await page.click('button:has-text("I copied my public key")');
 
     // Now on step 4
-    await expect(page).toHaveURL("/wizard/rent-vps");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/rent-vps"));
     await expect(page.locator("h1").first()).toContainText(/VPS/i);
 
     // Click continue
     await page.click('button:has-text("I rented a VPS")');
 
     // Should navigate to step 5
-    await expect(page).toHaveURL("/wizard/create-vps");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/create-vps"));
+    expect(new URL(page.url()).searchParams.get("os")).toBe("mac");
   });
 
   test("should complete step 5: Create VPS with IP address", async ({ page }) => {
@@ -123,7 +132,8 @@ test.describe("Wizard Flow", () => {
     await page.click('button:has-text("I rented a VPS")');
 
     // Now on step 5
-    await expect(page).toHaveURL("/wizard/create-vps");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/create-vps"));
+    expect(new URL(page.url()).searchParams.get("os")).toBe("mac");
 
     // Check all checklist items
     const checkboxes = page.locator('button[role="checkbox"]');
@@ -145,7 +155,10 @@ test.describe("Wizard Flow", () => {
     await page.click('button:has-text("Continue to SSH")');
 
     // Should navigate to step 6
-    await expect(page).toHaveURL("/wizard/ssh-connect");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/ssh-connect"));
+    const step6Url = new URL(page.url());
+    expect(step6Url.searchParams.get("os")).toBe("mac");
+    expect(step6Url.searchParams.get("ip")).toBe("192.168.1.100");
   });
 });
 
@@ -218,7 +231,7 @@ test.describe("SSH Connect Page - Critical Bug Prevention", () => {
     await page.click('button:has-text("continue")');
 
     // Should navigate to run-installer
-    await expect(page).toHaveURL("/wizard/run-installer");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/run-installer"));
   });
 });
 
@@ -234,6 +247,9 @@ test.describe("State Persistence", () => {
     // Check localStorage
     const os = await page.evaluate(() => localStorage.getItem("acfs-user-os"));
     expect(os).toBe("windows");
+
+    // URL query string should also reflect the selection
+    expect(new URL(page.url()).searchParams.get("os")).toBe("windows");
   });
 
   test("should persist VPS IP across page reloads", async ({ page }) => {
@@ -265,6 +281,9 @@ test.describe("State Persistence", () => {
     // Check localStorage
     const ip = await page.evaluate(() => localStorage.getItem("acfs-vps-ip"));
     expect(ip).toBe("10.0.0.50");
+
+    // URL query string should also reflect the IP
+    expect(new URL(page.url()).searchParams.get("ip")).toBe("10.0.0.50");
   });
 });
 
@@ -283,7 +302,8 @@ test.describe("Navigation", () => {
     await page.click('text="Choose Your OS"');
 
     // Should navigate back to step 1
-    await expect(page).toHaveURL("/wizard/os-selection");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/os-selection"));
+    expect(new URL(page.url()).searchParams.get("os")).toBe("mac");
   });
 
   test("should show mobile stepper on small screens", async ({ page }) => {
@@ -296,7 +316,9 @@ test.describe("Navigation", () => {
     await expect(page.locator('text="of 10"').first()).toBeVisible();
 
     // Mobile navigation buttons should be visible at bottom (Back and Next)
-    await expect(page.getByRole('button', { name: /back/i })).toBeVisible();
+    const bottomNav = page.locator(".bottom-nav-safe");
+    await expect(bottomNav.getByRole("button", { name: /^Back$/i })).toBeVisible();
+    await expect(bottomNav.getByRole("button", { name: /^Next$/i })).toBeVisible();
   });
 
   test("should navigate using back button", async ({ page }) => {
@@ -420,7 +442,8 @@ test.describe("Complete Wizard Flow Integration", () => {
     // On desktop projects, the OS should be auto-detected and the Continue button enabled.
     await expect(page.getByRole("button", { name: /^continue$/i })).toBeEnabled();
     await page.getByRole("button", { name: /^continue$/i }).click();
-    await expect(page).toHaveURL("/wizard/install-terminal");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/install-terminal"));
+    expect(new URL(page.url()).searchParams.get("os")).toMatch(/^(mac|windows)$/);
   });
 
   test("should complete entire wizard flow from start to finish", async ({ page }) => {
@@ -431,24 +454,25 @@ test.describe("Complete Wizard Flow Integration", () => {
 
     // Step 1: Home -> OS Selection
     await page.getByRole("link", { name: /start the wizard/i }).click();
-    await expect(page).toHaveURL("/wizard/os-selection");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/os-selection"));
 
     // Step 1: Select OS
     await page.getByRole('radio', { name: /Mac/i }).click();
     await page.getByRole('button', { name: /continue/i }).click();
-    await expect(page).toHaveURL("/wizard/install-terminal");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/install-terminal"));
+    expect(new URL(page.url()).searchParams.get("os")).toBe("mac");
 
     // Step 2: Install Terminal
     await page.getByRole('button', { name: /continue/i }).click();
-    await expect(page).toHaveURL("/wizard/generate-ssh-key");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/generate-ssh-key"));
 
     // Step 3: Generate SSH Key
     await page.click('button:has-text("I copied my public key")');
-    await expect(page).toHaveURL("/wizard/rent-vps");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/rent-vps"));
 
     // Step 4: Rent VPS
     await page.click('button:has-text("I rented a VPS")');
-    await expect(page).toHaveURL("/wizard/create-vps");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/create-vps"));
 
     // Step 5: Create VPS
     const checkboxes = page.locator('button[role="checkbox"]');
@@ -464,29 +488,110 @@ test.describe("Complete Wizard Flow Integration", () => {
     await ipInput.blur();
     await expect(page.locator('text="Valid IP address"')).toBeVisible({ timeout: 10000 });
     await page.click('button:has-text("Continue to SSH")');
-    await expect(page).toHaveURL("/wizard/ssh-connect");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/ssh-connect"));
+    const sshConnectUrl = new URL(page.url());
+    expect(sshConnectUrl.searchParams.get("os")).toBe("mac");
+    expect(sshConnectUrl.searchParams.get("ip")).toBe("192.168.1.100");
 
     // Step 6: SSH Connect - THE CRITICAL TEST
     // This should NOT get stuck on a loading spinner
     await expect(page.locator("h1").first()).toBeVisible({ timeout: 3000 });
     await expect(page.locator("h1").first()).toContainText(/SSH/i);
     await page.click('button:has-text("continue")');
-    await expect(page).toHaveURL("/wizard/run-installer");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/run-installer"));
 
     // Step 7: Run Installer
     await expect(page.locator("h1").first()).toContainText(/installer/i);
     await page.click('button:has-text("finished")');
-    await expect(page).toHaveURL("/wizard/reconnect-ubuntu");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/reconnect-ubuntu"));
 
     // Step 8: Reconnect Ubuntu
     await page.click('button:has-text("connected as ubuntu")');
-    await expect(page).toHaveURL("/wizard/status-check");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/status-check"));
 
     // Step 9: Status Check
     await page.click('button:has-text("Everything looks good")');
-    await expect(page).toHaveURL("/wizard/launch-onboarding");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/launch-onboarding"));
 
     // Step 10: Launch Onboarding - Final step!
     await expect(page.locator("h1").first()).toContainText(/congratulations|set up/i);
+  });
+});
+
+test.describe("Query Param Fallback", () => {
+  test("should honor ?os=windows when localStorage is empty", async ({ page }) => {
+    await page.goto("/wizard/install-terminal?os=windows");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/install-terminal"));
+    await expect(page.locator("h1").first()).toContainText(/terminal/i);
+
+    // Windows-specific content should render without redirecting.
+    await expect(page.getByText(/Windows Terminal/i)).toBeVisible();
+  });
+
+  test("should honor ?os and ?ip on deep-link to ssh-connect", async ({ page }) => {
+    await page.goto("/wizard/ssh-connect?os=mac&ip=192.168.1.100");
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/ssh-connect"));
+    await expect(page.locator("h1").first()).toContainText(/SSH/i);
+    await expect(page.locator('code:has-text("192.168.1.100")').first()).toBeVisible();
+  });
+});
+
+test.describe("No localStorage (query-only resilience)", () => {
+  test("should complete the wizard when localStorage is unavailable", async ({ page }, testInfo) => {
+    await page.addInitScript(() => {
+      const throwing = () => {
+        throw new Error("localStorage blocked");
+      };
+      Storage.prototype.getItem = throwing;
+      Storage.prototype.setItem = throwing;
+      Storage.prototype.removeItem = throwing;
+      Storage.prototype.clear = throwing;
+    });
+
+    // Step 1: pick an OS
+    await page.goto("/wizard/os-selection");
+    await expect(page.locator("h1").first()).toBeVisible();
+
+    // On mobile, auto-detect is disabled, so Continue should start disabled.
+    if (/Mobile/i.test(testInfo.project.name)) {
+      await expect(page.getByRole("button", { name: /^continue$/i })).toBeDisabled();
+    }
+
+    await page.getByRole("radio", { name: /Mac/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/install-terminal"));
+    expect(new URL(page.url()).searchParams.get("os")).toBe("mac");
+
+    // Step 2 -> Step 3
+    await page.getByRole("button", { name: /continue/i }).click();
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/generate-ssh-key"));
+
+    // Step 3 -> Step 4
+    await page.click('button:has-text("I copied my public key")');
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/rent-vps"));
+
+    // Step 4 -> Step 5
+    await page.click('button:has-text("I rented a VPS")');
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/create-vps"));
+
+    // Step 5 -> Step 6 (IP stored in URL)
+    const checkboxes = page.locator('button[role="checkbox"]');
+    const count = await checkboxes.count();
+    for (let i = 0; i < count; i++) {
+      await checkboxes.nth(i).click();
+    }
+
+    const ipInput = page.locator('input[placeholder*="192.168"]');
+    await ipInput.clear();
+    await ipInput.type("10.10.10.10");
+    await ipInput.blur();
+    await expect(page.locator('text="Valid IP address"')).toBeVisible({ timeout: 10000 });
+    await page.click('button:has-text("Continue to SSH")');
+
+    await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/ssh-connect"));
+    const url = new URL(page.url());
+    expect(url.searchParams.get("os")).toBe("mac");
+    expect(url.searchParams.get("ip")).toBe("10.10.10.10");
+    await expect(page.locator('code:has-text("10.10.10.10")').first()).toBeVisible();
   });
 });
