@@ -7,9 +7,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Ensure we have logging functions available
 if [[ -z "${ACFS_BLUE:-}" ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     # shellcheck source=logging.sh
     source "$SCRIPT_DIR/logging.sh" 2>/dev/null || true
 fi
@@ -18,8 +19,14 @@ fi
 # Configuration
 # ============================================================
 
-# Checksums file location (relative to project root)
-CHECKSUMS_FILE="${CHECKSUMS_FILE:-checksums.yaml}"
+# Checksums file location.
+# Prefer the repo-root checksums.yaml based on this script's location.
+DEFAULT_CHECKSUMS_FILE="$SCRIPT_DIR/../../checksums.yaml"
+if [[ -r "$DEFAULT_CHECKSUMS_FILE" ]]; then
+    CHECKSUMS_FILE="${CHECKSUMS_FILE:-$DEFAULT_CHECKSUMS_FILE}"
+else
+    CHECKSUMS_FILE="${CHECKSUMS_FILE:-checksums.yaml}"
+fi
 
 # Known installer URLs and their expected checksums
 # Format: URL|SHA256 (computed from the install script content)
@@ -181,14 +188,15 @@ fetch_and_run() {
         return 1
     fi
 
-    if [[ -n "$expected_sha256" ]]; then
-        verify_checksum "$url" "$expected_sha256" "$name" | bash -s -- "${args[@]}"
-    else
-        curl -fsSL "$url" 2>/dev/null | bash -s -- "${args[@]}" || {
-            echo -e "${RED}Error:${NC} Failed to fetch or run $name" >&2
-            return 1
-        }
+    if [[ -z "$expected_sha256" ]]; then
+        echo -e "${RED}Security Error:${NC} Missing checksum for $name" >&2
+        echo -e "  URL: $url" >&2
+        echo -e "  Refusing to execute unverified installer script." >&2
+        echo -e "  Fix: update checksums.yaml (./scripts/lib/security.sh --update-checksums > checksums.yaml)" >&2
+        return 1
     fi
+
+    verify_checksum "$url" "$expected_sha256" "$name" | bash -s -- "${args[@]}"
 }
 
 # ============================================================
@@ -252,7 +260,7 @@ load_checksums() {
     local file="${1:-$CHECKSUMS_FILE}"
     local current_tool=""
 
-    if [[ ! -f "$file" ]]; then
+    if [[ ! -r "$file" ]]; then
         echo -e "${YELLOW}Warning:${NC} Checksums file not found: $file" >&2
         return 1
     fi
