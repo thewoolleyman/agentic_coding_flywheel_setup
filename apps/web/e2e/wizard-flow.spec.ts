@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * ACFS Wizard Flow E2E Tests
+ * Agent Flywheel Wizard Flow E2E Tests
  *
  * These tests verify the complete wizard user journey works correctly,
  * including state persistence, navigation, and edge cases.
@@ -370,14 +370,15 @@ test.describe("Command Card Copy Functionality", () => {
 test.describe("Beginner Guide", () => {
   test("should expand SimplerGuide on click", async ({ page }) => {
     await page.goto("/wizard/os-selection");
+    await page.waitForLoadState("networkidle");
 
     // Find and click the SimplerGuide toggle
-    const guideToggle = page.locator('button:has-text("Make it simpler")');
+    const guideToggle = page.getByRole('button', { name: /make it simpler/i });
     if (await guideToggle.isVisible()) {
       await guideToggle.click();
 
-      // Guide content should expand - look for content that appears
-      await expect(page.locator('text="extra help"')).toBeVisible();
+      // After clicking, the subtitle should change to "Click to collapse"
+      await expect(page.getByText(/click to collapse/i)).toBeVisible();
     }
   });
 });
