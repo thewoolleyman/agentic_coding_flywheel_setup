@@ -84,19 +84,21 @@ log_to_file() {
     echo "[$(date -Iseconds)] $message" >> "$logfile" 2>/dev/null || true
 }
 
+# Associative array for timer tracking (avoids eval)
+declare -gA ACFS_TIMERS=()
+
 # Start a timed operation (for performance tracking)
 # Usage: timer_start "operation_name"
 timer_start() {
     local name="$1"
-    eval "ACFS_TIMER_${name}=$(date +%s)"
+    ACFS_TIMERS["$name"]=$(date +%s)
 }
 
 # End a timed operation and log duration
 # Usage: timer_end "operation_name"
 timer_end() {
     local name="$1"
-    local start_var="ACFS_TIMER_${name}"
-    local start="${!start_var:-$(date +%s)}"
+    local start="${ACFS_TIMERS[$name]:-$(date +%s)}"
     local end
     end=$(date +%s)
     local duration=$((end - start))

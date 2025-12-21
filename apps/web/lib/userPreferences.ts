@@ -5,8 +5,8 @@
  * Uses TanStack Query for React state management with localStorage persistence.
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useState, useEffect } from "react";
 import { safeGetItem, safeSetItem } from "./utils";
 
 export type OperatingSystem = "mac" | "windows";
@@ -85,77 +85,51 @@ export function isValidIP(ip: string): boolean {
   });
 }
 
-// --- React Hooks using TanStack Query ---
+// --- React Hooks for User Preferences ---
+// Using useState/useEffect instead of TanStack Query for reliable synchronous access
+// This avoids race conditions where redirects happen before async queries resolve
 
 /**
  * Hook to get and set the user's operating system.
- * Uses TanStack Query for state management with localStorage persistence.
+ * Uses useState/useEffect for reliable synchronous localStorage access.
  */
 export function useUserOS(): [OperatingSystem | null, (os: OperatingSystem) => void] {
-  const queryClient = useQueryClient();
+  const [os, setOSState] = useState<OperatingSystem | null>(null);
 
-  const { data: os } = useQuery({
-    queryKey: userPreferencesKeys.userOS,
-    queryFn: getUserOS,
-    staleTime: Infinity,
-    gcTime: Infinity,
-  });
+  // Read from localStorage on mount (intentional - SSR-safe pattern)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: localStorage is only available client-side
+    setOSState(getUserOS());
+  }, []);
 
-  const mutation = useMutation({
-    mutationFn: async (newOS: OperatingSystem) => {
-      setUserOS(newOS);
-      return newOS;
-    },
-    onSuccess: (newOS) => {
-      queryClient.setQueryData(userPreferencesKeys.userOS, newOS);
-    },
-  });
+  const setOS = useCallback((newOS: OperatingSystem) => {
+    setUserOS(newOS);
+    setOSState(newOS);
+  }, []);
 
-  const setOS = useCallback(
-    (newOS: OperatingSystem) => {
-      mutation.mutate(newOS);
-    },
-    [mutation]
-  );
-
-  return [os ?? null, setOS];
+  return [os, setOS];
 }
 
 /**
  * Hook to get and set the VPS IP address.
- * Uses TanStack Query for state management with localStorage persistence.
+ * Uses useState/useEffect for reliable synchronous localStorage access.
  */
 export function useVPSIP(): [string | null, (ip: string) => void] {
-  const queryClient = useQueryClient();
+  const [ip, setIPState] = useState<string | null>(null);
 
-  const { data: ip } = useQuery({
-    queryKey: userPreferencesKeys.vpsIP,
-    queryFn: getVPSIP,
-    staleTime: Infinity,
-    gcTime: Infinity,
-  });
+  // Read from localStorage on mount (intentional - SSR-safe pattern)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: localStorage is only available client-side
+    setIPState(getVPSIP());
+  }, []);
 
-  const mutation = useMutation({
-    mutationFn: async (newIP: string) => {
-      const success = setVPSIP(newIP);
-      if (!success) {
-        throw new Error("Invalid IP address");
-      }
-      return newIP;
-    },
-    onSuccess: (newIP) => {
-      queryClient.setQueryData(userPreferencesKeys.vpsIP, newIP);
-    },
-  });
+  const setIP = useCallback((newIP: string) => {
+    if (setVPSIP(newIP)) {
+      setIPState(newIP);
+    }
+  }, []);
 
-  const setIP = useCallback(
-    (newIP: string) => {
-      mutation.mutate(newIP);
-    },
-    [mutation]
-  );
-
-  return [ip ?? null, setIP];
+  return [ip, setIP];
 }
 
 /**
@@ -176,14 +150,19 @@ export function useDetectedOS(): OperatingSystem | null {
 /**
  * Hook to track if the component is mounted (client-side hydrated).
  * Returns true once the component is mounted on the client.
+ *
+ * Uses useState/useEffect instead of TanStack Query because:
+ * 1. Mount detection is synchronous, not async data fetching
+ * 2. TanStack Query introduces unnecessary latency on first render
+ * 3. This pattern is more reliable and doesn't depend on query resolution
  */
 export function useMounted(): boolean {
-  const { data: isMounted } = useQuery({
-    queryKey: ["mounted"],
-    queryFn: () => true,
-    staleTime: Infinity,
-    gcTime: Infinity,
-  });
+  const [mounted, setMounted] = useState(false);
 
-  return isMounted ?? false;
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: standard hydration detection pattern
+    setMounted(true);
+  }, []);
+
+  return mounted;
 }
