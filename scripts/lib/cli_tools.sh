@@ -281,7 +281,7 @@ install_lazygit() {
     [[ -z "$version" ]] && version="0.44.1"
 
     local tmpdir
-    tmpdir=$(mktemp -d)
+    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/acfs_lazygit.XXXXXX")
     curl --proto '=https' --proto-redir '=https' -fsSL -o "$tmpdir/lazygit.tar.gz" \
         "https://github.com/jesseduffield/lazygit/releases/download/v${version}/lazygit_${version}_Linux_${arch}.tar.gz" || {
         log_warn "Could not download lazygit"
@@ -323,7 +323,7 @@ install_lazydocker() {
     [[ -z "$version" ]] && version="0.23.3"
 
     local tmpdir
-    tmpdir=$(mktemp -d)
+    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/acfs_lazydocker.XXXXXX")
     curl --proto '=https' --proto-redir '=https' -fsSL -o "$tmpdir/lazydocker.tar.gz" \
         "https://github.com/jesseduffield/lazydocker/releases/download/v${version}/lazydocker_${version}_Linux_${arch}.tar.gz" || {
         log_warn "Could not download lazydocker"

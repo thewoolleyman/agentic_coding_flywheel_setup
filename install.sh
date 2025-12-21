@@ -1340,14 +1340,23 @@ run_ubuntu_upgrade_phase() {
         return 0
     fi
 
-    # Get current version
-    local current_version
-    current_version=$(ubuntu_get_version_string)
-    log_detail "Current Ubuntu version: $current_version"
+    # Get current version (as number for comparison, as string for display)
+    local current_version_num current_version_str
+    current_version_str=$(ubuntu_get_version_string)
+    current_version_num=$(ubuntu_get_version_number)
+    log_detail "Current Ubuntu version: $current_version_str"
 
-    # Check if upgrade is needed
-    if ubuntu_version_gte "$current_version" "$TARGET_UBUNTU_VERSION"; then
-        log_detail "Ubuntu $current_version meets target ($TARGET_UBUNTU_VERSION)"
+    # Convert target version string to number for comparison
+    # TARGET_UBUNTU_VERSION is "25.10", need 2510
+    local target_version_num
+    local target_major target_minor
+    target_major="${TARGET_UBUNTU_VERSION%%.*}"
+    target_minor="${TARGET_UBUNTU_VERSION#*.}"
+    target_version_num=$(printf "%d%02d" "$target_major" "$target_minor")
+
+    # Check if upgrade is needed (using numeric comparison)
+    if ubuntu_version_gte "$current_version_num" "$target_version_num"; then
+        log_detail "Ubuntu $current_version_str meets target ($TARGET_UBUNTU_VERSION)"
         return 0
     fi
 
@@ -1364,17 +1373,21 @@ run_ubuntu_upgrade_phase() {
         return 0
     fi
 
-    # Calculate upgrade path
+    # Calculate upgrade path (function takes target version NUMBER, determines current internally)
+    # Returns newline-separated list of version strings to upgrade through
     local upgrade_path
-    upgrade_path=$(ubuntu_get_upgrade_path "$current_version" "$TARGET_UBUNTU_VERSION")
+    upgrade_path=$(ubuntu_calculate_upgrade_path "$target_version_num")
 
     if [[ -z "$upgrade_path" ]]; then
-        log_detail "No upgrade path found from $current_version to $TARGET_UBUNTU_VERSION"
+        log_detail "No upgrade path found from $current_version_str to $TARGET_UBUNTU_VERSION"
         return 0
     fi
 
     log_step "-1/10" "Ubuntu Auto-Upgrade"
-    log_info "Upgrade path: $current_version → $upgrade_path → $TARGET_UBUNTU_VERSION"
+    # Format path for display (e.g., "24.10 → 25.04 → 25.10")
+    local upgrade_path_display
+    upgrade_path_display=$(echo "$upgrade_path" | tr '\n' ' ' | sed 's/ $//; s/ / → /g')
+    log_info "Upgrade path: $current_version_str → $upgrade_path_display"
 
     # Show warning and get confirmation (unless --yes mode)
     if type -t ubuntu_show_upgrade_warning &>/dev/null; then
@@ -1388,7 +1401,7 @@ run_ubuntu_upgrade_phase() {
         read -r -p "Proceed with Ubuntu upgrade? [y/N] " response
         if [[ ! "$response" =~ ^[Yy] ]]; then
             log_info "Ubuntu upgrade skipped by user"
-            log_info "Continuing with ACFS installation on Ubuntu $current_version"
+            log_info "Continuing with ACFS installation on Ubuntu $current_version_str"
             return 0
         fi
     fi
@@ -1414,14 +1427,22 @@ run_ubuntu_upgrade_phase() {
             acfs_source_dir="DOWNLOAD"
         fi
 
-        # Save original arguments for resume after final reboot
-        local original_args="$*"
+        # Build arguments for resume after final reboot
+        # Note: $* would be empty here (function called with no args)
+        # We reconstruct from the parsed global flags
+        local original_args=""
         if [[ "$YES_MODE" == "true" ]]; then
-            original_args="--yes $original_args"
+            original_args="--yes"
         fi
         if [[ "$MODE" == "vibe" ]]; then
-            original_args="--mode vibe $original_args"
+            original_args="$original_args --mode vibe"
         fi
+        # Pass through target version for consistency
+        if [[ "$TARGET_UBUNTU_VERSION" != "25.10" ]]; then
+            original_args="$original_args --target-ubuntu=$TARGET_UBUNTU_VERSION"
+        fi
+        # Trim leading/trailing whitespace
+        original_args="${original_args# }"
 
         if ! ubuntu_start_upgrade_sequence "$acfs_source_dir" "$original_args"; then
             log_error "Ubuntu upgrade failed to start"

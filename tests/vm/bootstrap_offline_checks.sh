@@ -42,7 +42,7 @@ create_archive() {
   # Portable archive creation (GNU tar and BSD tar compatible):
   # create a staging dir with an explicit top-level folder, then tar it.
   local stage_dir
-  stage_dir="$(mktemp -d /tmp/acfs-offline-stage.XXXXXX)"
+  stage_dir="$(mktemp -d "${TMPDIR:-/tmp}/acfs-offline-stage.XXXXXX")"
 
   mkdir -p "$stage_dir/acfs-offline/scripts"
 
@@ -61,7 +61,7 @@ create_bad_archive() {
   local good_archive="$1"
   local bad_archive="$2"
   local bad_dir
-  bad_dir="$(mktemp -d /tmp/acfs-offline-bad.XXXXXX)"
+  bad_dir="$(mktemp -d "${TMPDIR:-/tmp}/acfs-offline-bad.XXXXXX")"
 
   log "Creating bad archive: $bad_archive"
   tar -xzf "$good_archive" -C "$bad_dir"
@@ -71,7 +71,7 @@ create_bad_archive() {
 
 create_stub_curl() {
   local stub_dir
-  stub_dir="$(mktemp -d /tmp/acfs-curl-stub.XXXXXX)"
+  stub_dir="$(mktemp -d "${TMPDIR:-/tmp}/acfs-curl-stub.XXXXXX")"
 
   cat > "$stub_dir/curl" <<'CURL'
 #!/usr/bin/env bash
@@ -179,8 +179,8 @@ main() {
   local bad_archive
 
   # mktemp portability: BSD mktemp requires Xs at the end of the template
-  good_archive="$(mktemp /tmp/acfs-offline-archive.XXXXXX)"
-  bad_archive="$(mktemp /tmp/acfs-offline-archive-bad.XXXXXX)"
+  good_archive="$(mktemp "${TMPDIR:-/tmp}/acfs-offline-archive.XXXXXX")"
+  bad_archive="$(mktemp "${TMPDIR:-/tmp}/acfs-offline-archive-bad.XXXXXX")"
 
   create_archive "$good_archive"
   run_bootstrap "$good_archive" "happy-path"
