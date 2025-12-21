@@ -271,17 +271,24 @@ check_auth_status() {
                 return 2
             fi
             # Codex stores auth in ~/.codex
-            [[ -s "$HOME/.codex/auth.json" ]] && return 0 || return 1
+            local codex_home="${CODEX_HOME:-$HOME/.codex}"
+            [[ -s "$codex_home/auth.json" ]] && return 0 || return 1
             ;;
         gemini)
             if ! command -v gemini &>/dev/null; then
                 return 2
             fi
-            if [[ -n "${GOOGLE_API_KEY:-}" ]]; then
+            if [[ -n "${GOOGLE_API_KEY:-}" || -n "${GEMINI_API_KEY:-}" ]]; then
                 return 0
             fi
             # Gemini uses gcloud/google auth
-            [[ -s "$HOME/.config/gemini/credentials.json" || -d "$HOME/.config/gemini" ]] && return 0 || return 1
+            if [[ -s "$HOME/.config/gemini/credentials.json" || -d "$HOME/.config/gemini" ]]; then
+                return 0
+            fi
+            if [[ -f "$HOME/.gemini/config" || -f "$HOME/.config/gcloud/application_default_credentials.json" ]]; then
+                return 0
+            fi
+            return 1
             ;;
         github)
             if ! command -v gh &>/dev/null; then
@@ -314,7 +321,10 @@ check_auth_status() {
             if ! command -v wrangler &>/dev/null; then
                 return 2
             fi
-            if [[ -s "$HOME/.config/.wrangler/config/default.toml" || -s "$HOME/.wrangler/config/default.toml" ]]; then
+            if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+                return 0
+            fi
+            if [[ -s "$HOME/.config/.wrangler/config/default.toml" || -s "$HOME/.config/wrangler/config/default.toml" || -s "$HOME/.wrangler/config/default.toml" ]]; then
                 return 0
             fi
             return 1
@@ -325,11 +335,19 @@ check_auth_status() {
     esac
 }
 
+# Fetch auth status without tripping `set -e`
+# Echoes: 0 (authed), 1 (needs auth), 2 (not installed)
+get_auth_status_code() {
+    local service=$1
+    check_auth_status "$service"
+    echo "$?"
+}
+
 # Get auth status display for a service
 get_auth_status_display() {
     local service=$1
-    check_auth_status "$service"
-    local status=$?
+    local status
+    status=$(get_auth_status_code "$service")
 
     case $status in
         0) echo -e "${GREEN}✓${NC}" ;;
@@ -372,8 +390,8 @@ show_auth_flow() {
         local status_icon
         status_icon=$(get_auth_status_display "$service")
 
-        check_auth_status "$service"
-        local status=$?
+        local status
+        status=$(get_auth_status_code "$service")
 
         if [[ $status -ne 2 ]]; then
             ((total++))
@@ -398,8 +416,8 @@ show_auth_flow() {
     if has_gum; then
         local -a items=()
         for service in "${AUTH_SERVICES[@]}"; do
-            check_auth_status "$service"
-            local status=$?
+            local status
+            status=$(get_auth_status_code "$service")
             if [[ $status -eq 1 ]]; then
                 items+=("🔑 Authenticate ${AUTH_SERVICE_NAMES[$service]}")
             fi
@@ -436,8 +454,9 @@ show_auth_flow() {
 
         local idx=1
         for service in "${AUTH_SERVICES[@]}"; do
-            check_auth_status "$service"
-            if [[ $? -eq 1 ]]; then
+            local status
+            status=$(get_auth_status_code "$service")
+            if [[ $status -eq 1 ]]; then
                 echo "  [$idx] ${AUTH_SERVICE_NAMES[$service]}"
             fi
             ((idx++))

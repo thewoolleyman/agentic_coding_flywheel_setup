@@ -455,6 +455,17 @@ print_skipped_tools_summary() {
     report_skipped_tools
 }
 
+# Helper: JSON escape string
+_json_escape() {
+    local s="$1"
+    s="${s//\\/\\\\}" # escape backslashes
+    s="${s//\"/\\\"}" # escape quotes
+    s="${s//$'\n'/\\n}" # escape newlines
+    s="${s//$'\r'/\\r}" # escape CR
+    s="${s//$'\t'/\\t}" # escape tabs
+    printf '%s' "$s"
+}
+
 # get_skipped_tools_json - Get skipped tools as JSON for state persistence
 #
 # Returns JSON array suitable for state.json:
@@ -474,8 +485,9 @@ get_skipped_tools_json() {
         reason="$(get_skip_reason "$tool")"
         url="$(get_skip_url "$tool")"
 
-        # Escape quotes in strings
-        reason="${reason//\"/\\\"}"
+        # Escape strings
+        reason="$(_json_escape "$reason")"
+        url="$(_json_escape "$url")"
 
         if [[ "$first" == "true" ]]; then
             first=false

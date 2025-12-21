@@ -166,7 +166,8 @@ print_session_help() {
 }
 
 acfs_session_recent() {
-    local workspace="$(pwd)"
+    local workspace
+    workspace="$(pwd)"
     local format="json"
 
     while [[ $# -gt 0 ]]; do

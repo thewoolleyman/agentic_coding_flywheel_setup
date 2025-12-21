@@ -148,8 +148,11 @@ install_postgresql() {
     $sudo_cmd mkdir -p /etc/apt/keyrings
 
     # Download and install the repository signing key
-    curl --proto '=https' --proto-redir '=https' -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-        $sudo_cmd gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg 2>/dev/null || true
+    if ! curl --proto '=https' --proto-redir '=https' -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+        $sudo_cmd gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg 2>/dev/null; then
+        log_warn "Failed to download/install PostgreSQL signing key"
+        return 1
+    fi
 
     # Add repository
     echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${codename}-pgdg main" | \
@@ -227,8 +230,11 @@ install_vault() {
     # Add HashiCorp GPG key and repository
     $sudo_cmd mkdir -p /etc/apt/keyrings
 
-    curl --proto '=https' --proto-redir '=https' -fsSL https://apt.releases.hashicorp.com/gpg | \
-        $sudo_cmd gpg --dearmor -o /etc/apt/keyrings/hashicorp.gpg 2>/dev/null || true
+    if ! curl --proto '=https' --proto-redir '=https' -fsSL https://apt.releases.hashicorp.com/gpg | \
+        $sudo_cmd gpg --dearmor -o /etc/apt/keyrings/hashicorp.gpg 2>/dev/null; then
+        log_warn "Failed to download/install HashiCorp signing key"
+        return 1
+    fi
 
     # Get Ubuntu codename
     local codename
@@ -270,7 +276,7 @@ _install_cloud_cli() {
 
     log_detail "Installing $cli..."
 
-    if _cloud_run_as_user "\"$bun_bin\" install -g $cli@latest 2>/dev/null"; then
+    if _cloud_run_as_user "\"$bun_bin\" install -g $cli@latest"; then
         if [[ -x "$cli_bin" ]]; then
             log_success "$cli installed"
             return 0
