@@ -1591,6 +1591,13 @@ setup_filesystem() {
     set_phase "setup_filesystem" "Filesystem Setup" 3
     log_step "3/10" "Setting up filesystem..."
 
+    if acfs_use_generated_category "base"; then
+        log_detail "Using generated installers for base (phase 3)"
+        acfs_run_generated_category_phase "base" "3" || return 1
+        log_success "Filesystem setup complete"
+        return 0
+    fi
+
     # System directories
     local sys_dirs=("/data/projects" "/data/cache")
     for dir in "${sys_dirs[@]}"; do
@@ -1626,6 +1633,13 @@ setup_filesystem() {
 setup_shell() {
     set_phase "setup_shell" "Shell Setup" 4
     log_step "4/10" "Setting up shell..."
+
+    if acfs_use_generated_category "shell"; then
+        log_detail "Using generated installers for shell (phase 4)"
+        acfs_run_generated_category_phase "shell" "4" || return 1
+        log_success "Shell setup complete"
+        return 0
+    fi
 
     # Install zsh
     if ! command_exists zsh; then
@@ -1760,6 +1774,13 @@ install_github_cli() {
 install_cli_tools() {
     set_phase "install_cli_tools" "CLI Tools" 5
     log_step "5/10" "Installing CLI tools..."
+
+    if acfs_use_generated_category "cli"; then
+        log_detail "Using generated installers for cli (phase 5)"
+        acfs_run_generated_category_phase "cli" "5" || return 1
+        log_success "CLI tools installed"
+        return 0
+    fi
 
     # Install gum if not already installed (install_gum_early may have skipped
     # if curl/gpg weren't available at that point)
