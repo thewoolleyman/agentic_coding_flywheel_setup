@@ -45,6 +45,7 @@ fi
 # These are reference checksums - actual scripts may change
 declare -A KNOWN_INSTALLERS=(
     ["bun"]="https://bun.sh/install"
+    ["claude"]="https://claude.ai/install.sh"
     ["uv"]="https://astral.sh/uv/install.sh"
     ["rust"]="https://sh.rustup.rs"
     ["ohmyzsh"]="https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"

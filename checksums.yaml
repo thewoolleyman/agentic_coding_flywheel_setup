@@ -1,5 +1,5 @@
 # checksums.yaml - ACFS Installer Security Checksums
-# Auto-generated: 2025-12-20
+# Auto-generated: 2025-12-21
 #
 # These checksums verify upstream installer scripts.
 # To update: ./scripts/lib/security.sh --update-checksums
@@ -25,6 +25,10 @@ installers:
   cass:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_session_search/main/install.sh"
     sha256: "1545a3b7f028007e68eccb84b3e7dcd0e44ab2f21b5c078b7302b6683ed939e9"
+
+  claude:
+    url: "https://claude.ai/install.sh"
+    sha256: "54715810c1e802c8aca39cc867ae9b2ec764574e20f2a653c97ec61bebc07d68"
 
   cm:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh"
