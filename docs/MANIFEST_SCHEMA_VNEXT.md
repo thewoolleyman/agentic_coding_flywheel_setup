@@ -292,15 +292,15 @@ which is a reserved orchestrator name
 4. **Add installed_check**: For idempotent skip-if-present logic
 5. **Add install Commands**: Or use verified_installer for upstream scripts
 6. **Add verify Commands**: At least one required
-7. **Validate**: Run `bun run manifest:validate`
-8. **Regenerate**: Run `bun run manifest:generate`
+7. **Validate**: Run the generator in dry-run mode to check for errors
+8. **Regenerate**: Run the generator to update bash scripts
 
 ```bash
-# Validate manifest
-cd packages/manifest && bun run validate
+# Validate manifest (dry-run shows errors without writing files)
+cd packages/manifest && bun run generate:dry
 
 # Generate bash scripts
-bun run generate
+cd packages/manifest && bun run generate
 ```
 
 ### Modifying an Existing Module
@@ -318,29 +318,30 @@ grep -r "dependencies:" acfs.manifest.yaml | grep "module-id"
 ### Debugging Validation Errors
 
 ```bash
-# Parse and validate manifest
+# Parse and validate manifest (dry-run mode)
 cd packages/manifest
-bun run validate
-
-# Check specific module
-bun run validate --module lang.bun
+bun run generate:dry
 
 # Generate with verbose output
-bun run generate --verbose
+bun run generate:dry  # Shows validation + what would be generated
+
+# View actual generation output
+bun run generate      # Writes files to scripts/generated/
 ```
 
 ## Generated Output
 
 The generator produces:
-- `scripts/generated/modules/*.sh` - Per-module install functions
-- `scripts/generated/install_all.sh` - Orchestrator that calls modules in phase order
+- `scripts/generated/install_<category>.sh` - Category-based install scripts (e.g., `install_lang.sh`, `install_cli.sh`)
+- `scripts/generated/install_all.sh` - Orchestrator that calls category scripts in phase order
 - `scripts/generated/manifest_index.sh` - Module metadata for runtime queries
+- `scripts/generated/doctor_checks.sh` - Health check functions
 
 ### Function Naming
 
 Module ID `lang.bun` generates:
 - Function: `install_lang_bun()`
-- File: `scripts/generated/modules/lang_bun.sh`
+- Location: Inside `scripts/generated/install_lang.sh` (grouped by category)
 
 ### Execution Model
 
@@ -366,7 +367,7 @@ install_all() {
 | `packages/manifest/src/types.ts` | TypeScript type definitions |
 | `packages/manifest/src/validate.ts` | Validation logic |
 | `packages/manifest/src/generate.ts` | Bash script generator |
-| `scripts/generated/` | Generated bash scripts (gitignored) |
+| `scripts/generated/` | Generated bash scripts (committed to git) |
 | `checksums.yaml` | Verified installer checksums |
 
 ## Related Beads

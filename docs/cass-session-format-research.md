@@ -207,18 +207,22 @@ From `cass capabilities --json`:
 
 ## Session Storage Locations
 
-| Agent | Path Pattern |
-|-------|--------------|
-| Codex | `~/.codex/sessions/YYYY/MM/rollout-*.jsonl` |
-| Claude Code | `~/.claude/sessions/*/session.jsonl` |
-| Amp | `~/Library/Application Support/amp/amp/thread-*.json` |
-| Gemini | `~/.gemini/sessions/*.jsonl` |
+Paths observed during research (may vary by platform/version):
+
+| Agent | Path Pattern | Verified |
+|-------|--------------|----------|
+| Codex | `~/.codex/sessions/YYYY/MM/rollout-*.jsonl` | Yes |
+| Amp | `~/Library/Application Support/amp/amp/thread-*.json` | Yes |
+| Claude Code | Platform-specific (use `cass diag` to discover) | No |
+| Gemini | Platform-specific (use `cass diag` to discover) | No |
+
+**Note:** Use `cass diag --json` to discover actual session paths on your system.
 
 ## Limitations and Gaps
 
 1. **No `list` command** - Must use `search "*"` or `timeline` to discover sessions
 2. **No session metadata API** - Can't get session count/dates without exporting
-3. **Timeline command has DB schema issues** - `no such column: c.agent` error observed
+3. **Timeline command may have issues** - DB schema errors observed in v0.1.35 (`no such column: c.agent`)
 4. **Read-only** - Cannot modify or delete session data via CASS
 5. **No session filtering by date** in search (only in timeline)
 6. **Large sessions can be slow** to export (10K+ messages)
