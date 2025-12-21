@@ -478,7 +478,7 @@ Press Enter to launch 'wrangler login'..."
 }
 
 setup_postgres() {
-    if ! command -v psql &>/dev/null; then
+    if ! user_command_exists psql; then
         gum_error "PostgreSQL not installed. Run the main installer first."
         return 1
     fi
