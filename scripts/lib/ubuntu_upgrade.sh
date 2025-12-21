@@ -13,6 +13,12 @@ export UBUNTU_TARGET_VERSION_NUM=2510
 # Minimum disk space required for upgrade (in MB)
 export UBUNTU_UPGRADE_MIN_DISK_MB=5000
 
+# Directory for resume infrastructure (created during upgrade)
+export ACFS_RESUME_DIR="/var/lib/acfs"
+
+# Lock file location
+export ACFS_UPGRADE_LOCK="/var/run/acfs-upgrade.lock"
+
 # Fallback logging if logging.sh not sourced
 if ! declare -f log_fatal &>/dev/null; then
     log_fatal() { echo "FATAL: $1" >&2; exit 1; }
@@ -539,16 +545,18 @@ ubuntu_cleanup_resume() {
     return 0
 }
 
-# Trigger reboot with delay
+# Trigger reboot with delay (in minutes)
 # Allows SSH sessions to close gracefully
+# Note: shutdown -r +N uses MINUTES, not seconds
 ubuntu_trigger_reboot() {
-    local delay="${1:-5}"
+    local delay_minutes="${1:-1}"
 
-    log_warn "System will reboot in $delay seconds..."
+    log_warn "System will reboot in $delay_minutes minute(s)..."
     log_warn "Reconnect via SSH after reboot to continue."
 
     # Use shutdown for graceful reboot
-    shutdown -r +"$delay" "ACFS: Ubuntu upgrade requires reboot" &
+    # Note: +N means N minutes from now
+    shutdown -r +"$delay_minutes" "ACFS: Ubuntu upgrade requires reboot" &
 
     return 0
 }
@@ -653,9 +661,6 @@ upgrade_remove_motd() {
 # ============================================================
 # Lock File and Progress Functions
 # ============================================================
-
-# Lock file location
-ACFS_UPGRADE_LOCK="/var/run/acfs-upgrade.lock"
 
 # Acquire upgrade lock to prevent concurrent runs
 # Returns: 0 if lock acquired, 1 if already locked
@@ -766,9 +771,6 @@ STATUS_SCRIPT
 # ============================================================
 # Upgrade Infrastructure Setup/Teardown
 # ============================================================
-
-# Directory for resume infrastructure
-ACFS_RESUME_DIR="/var/lib/acfs"
 
 # Setup complete resume infrastructure
 # This copies all necessary files and sets up systemd service
@@ -971,10 +973,10 @@ ubuntu_start_upgrade_sequence() {
     # Update MOTD before reboot
     upgrade_update_motd "Rebooting for upgrade to $first_target..."
 
-    # Trigger reboot
-    log_warn "Upgrade step complete. Rebooting in 10 seconds..."
+    # Trigger reboot (1 minute delay for user to read messages)
+    log_warn "Upgrade step complete. Rebooting in 1 minute..."
     log_warn "Reconnect via SSH after reboot. Upgrade will continue automatically."
-    ubuntu_trigger_reboot 10
+    ubuntu_trigger_reboot 1
 
     return 0
 }
@@ -1098,6 +1100,35 @@ ubuntu_emergency_cleanup() {
     log_detail "Available space after cleanup: $available"
 }
 
+# Internal helper: Check if dpkg is locked
+# Uses fuser if available, falls back to lsof, then simple file check
+_dpkg_is_locked() {
+    local lock_file="/var/lib/dpkg/lock-frontend"
+
+    # Try fuser first (most reliable)
+    if command -v fuser &>/dev/null; then
+        fuser "$lock_file" >/dev/null 2>&1
+        return $?
+    fi
+
+    # Fallback to lsof
+    if command -v lsof &>/dev/null; then
+        lsof "$lock_file" >/dev/null 2>&1
+        return $?
+    fi
+
+    # Last resort: check if lock file exists and has content
+    # This is less reliable but better than nothing
+    if [[ -f "$lock_file" ]]; then
+        # Check if any apt/dpkg process is running
+        # Use -f for pattern match (not -x which requires exact match)
+        pgrep -f "apt|apt-get|dpkg|aptitude" >/dev/null 2>&1
+        return $?
+    fi
+
+    return 1  # Not locked
+}
+
 # Fix interrupted dpkg operations
 ubuntu_fix_dpkg() {
     log_warn "Fixing interrupted dpkg operations..."
@@ -1105,7 +1136,9 @@ ubuntu_fix_dpkg() {
     # Wait for any running apt/dpkg
     local max_wait=300  # 5 minutes
     local waited=0
-    while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+
+    # Check for dpkg lock - use fuser if available, fallback to lsof or file check
+    while _dpkg_is_locked; do
         if [[ $waited -ge $max_wait ]]; then
             log_error "Timeout waiting for dpkg lock"
             return 1

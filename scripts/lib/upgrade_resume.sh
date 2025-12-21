@@ -161,9 +161,9 @@ log "System needs reboot to complete upgrade"
 # Update MOTD before reboot
 upgrade_update_motd "Rebooting to complete upgrade to $next_version..."
 
-# Trigger reboot
-log "Triggering reboot in 5 seconds..."
-ubuntu_trigger_reboot 5
+# Trigger reboot (1 minute delay for user to read messages)
+log "Triggering reboot in 1 minute..."
+ubuntu_trigger_reboot 1
 
 log "=== Upgrade Resume Script Exiting (reboot pending) ==="
 exit 0

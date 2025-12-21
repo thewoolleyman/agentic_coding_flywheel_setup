@@ -217,7 +217,9 @@ state_write_atomic() {
 
     # Check disk space before attempting write (require at least 1MB free)
     local available_kb
-    available_kb=$(df -k "$target_dir" 2>/dev/null | awk 'NR==2 {print $4}')
+    # Use -P for POSIX portability (prevents line wrapping on long device names)
+    # Use -k for 1K blocks
+    available_kb=$(df -kP "$target_dir" 2>/dev/null | awk 'NR==2 {print $4}')
     if [[ -n "$available_kb" ]] && [[ "$available_kb" -lt 1024 ]]; then
         declare -f log_error &>/dev/null && log_error "state_write_atomic: insufficient disk space (${available_kb}KB available, 1024KB minimum)"
         return 1
@@ -405,7 +407,19 @@ state_phase_start() {
 # Usage: state_step_update <step_description>
 state_step_update() {
     local step="$1"
-    state_update ".current_step = \"$step\""
+
+    if ! command -v jq &>/dev/null; then
+        return 1
+    fi
+
+    # Use jq's --arg for proper JSON escaping
+    local state
+    state=$(state_load) || return 1
+
+    local new_state
+    new_state=$(echo "$state" | jq --arg step "$step" '.current_step = $step')
+
+    state_save "$new_state"
 }
 
 # Mark a phase as completed
@@ -448,13 +462,23 @@ state_phase_fail() {
     local error="$3"
 
     if command -v jq &>/dev/null; then
-        state_update "
-            .failed_phase = \"$phase_id\" |
-            .failed_step = \"$step\" |
-            .failed_error = \"$error\" |
+        # Use jq's --arg for proper JSON escaping (handles quotes, backslashes, newlines)
+        local state
+        state=$(state_load) || return 1
+
+        local new_state
+        new_state=$(echo "$state" | jq \
+            --arg phase "$phase_id" \
+            --arg step "$step" \
+            --arg err "$error" '
+            .failed_phase = $phase |
+            .failed_step = $step |
+            .failed_error = $err |
             .current_phase = null |
             .current_step = null
-        "
+        ')
+
+        state_save "$new_state"
     fi
 }
 
@@ -1613,14 +1637,17 @@ state_upgrade_set_error() {
         return 1
     fi
 
-    # Escape quotes in error message
-    local escaped_msg
-    escaped_msg=$(printf '%s' "$error_msg" | sed 's/"/\\"/g')
+    # Use jq's --arg for proper JSON escaping (handles quotes, backslashes, newlines)
+    local state
+    state=$(state_load) || return 1
 
-    state_update "
-        .ubuntu_upgrade.last_error = \"$escaped_msg\" |
-        .ubuntu_upgrade.current_stage = \"error\"
-    "
+    local new_state
+    new_state=$(echo "$state" | jq --arg err "$error_msg" '
+        .ubuntu_upgrade.last_error = $err |
+        .ubuntu_upgrade.current_stage = "error"
+    ')
+
+    state_save "$new_state"
 }
 
 # Mark upgrade sequence as fully completed

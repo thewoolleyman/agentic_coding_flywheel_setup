@@ -121,7 +121,7 @@ try_step() {
 
     # Create temp file for output capture
     local output_file
-    output_file=$(mktemp) || output_file="/tmp/acfs_step_output.$$"
+    output_file=$(mktemp "${TMPDIR:-/tmp}/acfs_step.XXXXXX" 2>/dev/null) || output_file="/tmp/acfs_step_output.$$"
 
     local exit_code=0
 
@@ -474,8 +474,8 @@ retry_with_backoff() {
     local stderr_file
     local stdout_file
 
-    stderr_file=$(mktemp) || stderr_file="/tmp/acfs_retry_stderr.$$"
-    stdout_file=$(mktemp) || stdout_file="/tmp/acfs_retry_stdout.$$"
+    stderr_file=$(mktemp "${TMPDIR:-/tmp}/acfs_retry_stderr.XXXXXX" 2>/dev/null) || stderr_file="/tmp/acfs_retry_stderr.$$"
+    stdout_file=$(mktemp "${TMPDIR:-/tmp}/acfs_retry_stdout.XXXXXX" 2>/dev/null) || stdout_file="/tmp/acfs_retry_stdout.$$"
 
     for ((attempt=0; attempt < max_attempts; attempt++)); do
         local delay=${RETRY_DELAYS[$attempt]}
