@@ -647,6 +647,51 @@ detect_environment() {
 }
 
 # ============================================================
+# Source Generated Installers (mjt.5.6)
+# Loads generated category scripts for module functions.
+# ============================================================
+source_generated_installers() {
+    if [[ "${ACFS_GENERATED_SOURCED:-false}" == "true" ]]; then
+        return 0
+    fi
+
+    if [[ -z "${ACFS_GENERATED_DIR:-}" ]]; then
+        log_warn "ACFS_GENERATED_DIR not set; cannot source generated installers"
+        return 1
+    fi
+
+    if [[ ! -d "$ACFS_GENERATED_DIR" ]]; then
+        log_warn "Generated installers directory not found: $ACFS_GENERATED_DIR"
+        return 1
+    fi
+
+    local script=""
+    local scripts=(
+        "install_users.sh"
+        "install_base.sh"
+        "install_shell.sh"
+        "install_cli.sh"
+        "install_lang.sh"
+        "install_tools.sh"
+        "install_agents.sh"
+        "install_db.sh"
+        "install_cloud.sh"
+        "install_stack.sh"
+        "install_acfs.sh"
+    )
+
+    for script in "${scripts[@]}"; do
+        if [[ -f "$ACFS_GENERATED_DIR/$script" ]]; then
+            # shellcheck source=/dev/null
+            source "$ACFS_GENERATED_DIR/$script"
+        fi
+    done
+
+    ACFS_GENERATED_SOURCED=true
+    export ACFS_GENERATED_SOURCED
+}
+
+# ============================================================
 # List Modules (mjt.5.3)
 # Prints available modules from manifest_index.sh
 # ============================================================
@@ -1465,6 +1510,12 @@ ensure_base_deps() {
     set_phase "base_deps" "Base Dependencies" 1
     log_step "1/10" "Checking base dependencies..."
 
+    if acfs_use_generated_category "base"; then
+        log_detail "Using generated installers for base (phase 1)"
+        acfs_run_generated_category_phase "base" "1" || return 1
+        return 0
+    fi
+
     if [[ "$DRY_RUN" == "true" ]]; then
         local sudo_prefix=""
         if [[ -n "${SUDO:-}" ]]; then
@@ -1489,6 +1540,13 @@ ensure_base_deps() {
 normalize_user() {
     set_phase "normalize_user" "User Normalization" 2
     log_step "2/10" "Normalizing user account..."
+
+    if acfs_use_generated_category "users"; then
+        log_detail "Using generated installers for users (phase 2)"
+        acfs_run_generated_category_phase "users" "2" || return 1
+        log_success "User normalization complete"
+        return 0
+    fi
 
     # Create target user if it doesn't exist
     if ! id "$TARGET_USER" &>/dev/null; then
@@ -2518,6 +2576,9 @@ main() {
     # Detect environment and source manifest index (mjt.5.3)
     # This must happen BEFORE any handlers that need module data
     detect_environment
+
+    # Source generated installers for manifest-driven execution (mjt.5.6)
+    source_generated_installers
 
     # Map legacy --skip-* flags to SKIP_MODULES (mjt.5.5)
     # This allows --skip-postgres, --skip-vault, --skip-cloud to work
