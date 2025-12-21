@@ -475,7 +475,7 @@ The installer tracks progress in `~/.acfs/state.json`. If interrupted:
 
 To force a fresh reinstall of all tools:
 ```bash
-curl -fsSL "..." | bash -s -- --yes --mode vibe --force-reinstall
+curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main/install.sh" | bash -s -- --yes --mode vibe --force-reinstall
 ```
 
 ### Pre-Flight Check

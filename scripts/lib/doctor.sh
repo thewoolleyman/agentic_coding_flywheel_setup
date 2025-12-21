@@ -1187,10 +1187,8 @@ print_summary() {
 
     # Print legend (bead qup)
     if [[ "$HAS_GUM" == "true" ]]; then
-        echo ""
         gum style --foreground "$ACFS_MUTED" "  Legend: $(gum style --foreground "$ACFS_SUCCESS" "✓") installed  $(gum style --foreground "$ACFS_MUTED" "○") skipped  $(gum style --foreground "$ACFS_ERROR" "✖") missing  $(gum style --foreground "$ACFS_WARNING" "⚠") warning  $(gum style --foreground "$ACFS_WARNING" "?") timeout"
     else
-        echo ""
         echo -e "  Legend: ${GREEN}✓${NC} installed  ${CYAN}○${NC} skipped  ${RED}✖${NC} missing  ${YELLOW}⚠${NC} warning  ${YELLOW}?${NC} timeout"
     fi
 

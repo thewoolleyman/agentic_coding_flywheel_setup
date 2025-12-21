@@ -11,6 +11,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 find_update_script() {
   local candidate=""
 
+  # Respect ACFS_HOME if set (installed location)
+  if [[ -n "${ACFS_HOME:-}" ]] && [[ -f "${ACFS_HOME}/scripts/lib/update.sh" ]]; then
+    candidate="${ACFS_HOME}/scripts/lib/update.sh"
+    echo "$candidate"
+    return 0
+  fi
+
   # Repo-relative path (running from source)
   if [[ -f "${SCRIPT_DIR}/lib/update.sh" ]]; then
     candidate="${SCRIPT_DIR}/lib/update.sh"

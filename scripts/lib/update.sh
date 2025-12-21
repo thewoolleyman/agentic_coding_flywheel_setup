@@ -491,8 +491,9 @@ update_agents() {
             fi
         fi
 
+        # Show version change without double-counting (run_cmd already incremented SUCCESS_COUNT)
         if capture_version_after "claude"; then
-            log_item "ok" "Claude Code updated" "${VERSION_BEFORE[claude]} → ${VERSION_AFTER[claude]}"
+            [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[claude]} → ${VERSION_AFTER[claude]}${NC}"
         fi
     else
         log_item "skip" "Claude Code" "not installed"
@@ -502,8 +503,9 @@ update_agents() {
     if cmd_exists codex || [[ "$FORCE_MODE" == "true" ]]; then
         capture_version_before "codex"
         run_cmd "Codex CLI" "$bun_bin" install -g @openai/codex@latest
+        # Show version change without double-counting
         if capture_version_after "codex"; then
-            log_item "ok" "Codex CLI updated" "${VERSION_BEFORE[codex]} → ${VERSION_AFTER[codex]}"
+            [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[codex]} → ${VERSION_AFTER[codex]}${NC}"
         fi
     else
         log_item "skip" "Codex CLI" "not installed (use --force to install)"
@@ -513,8 +515,9 @@ update_agents() {
     if cmd_exists gemini || [[ "$FORCE_MODE" == "true" ]]; then
         capture_version_before "gemini"
         run_cmd "Gemini CLI" "$bun_bin" install -g @google/gemini-cli@latest
+        # Show version change without double-counting
         if capture_version_after "gemini"; then
-            log_item "ok" "Gemini CLI updated" "${VERSION_BEFORE[gemini]} → ${VERSION_AFTER[gemini]}"
+            [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[gemini]} → ${VERSION_AFTER[gemini]}${NC}"
         fi
     else
         log_item "skip" "Gemini CLI" "not installed (use --force to install)"
@@ -618,9 +621,9 @@ update_rust() {
     # Update rustup itself
     run_cmd "rustup self-update" "$rustup_bin" self update 2>/dev/null || true
 
-    # Capture version after and log if changed
+    # Show version change without double-counting
     if capture_version_after "rust"; then
-        log_item "ok" "Rust updated" "${VERSION_BEFORE[rust]} → ${VERSION_AFTER[rust]}"
+        [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[rust]} → ${VERSION_AFTER[rust]}${NC}"
     fi
 
     # Log installed toolchains
