@@ -64,6 +64,7 @@ export default function SecurityDocsPage() {
   useEffect(() => {
     const saved = safeGetJSON<string[]>(CHECKLIST_STORAGE_KEY);
     if (Array.isArray(saved)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage access must happen after mount (SSR-safe)
       setChecked(new Set(saved.filter((id) => itemsById.has(id))));
     }
   }, [itemsById]);
@@ -257,4 +258,3 @@ export default function SecurityDocsPage() {
     </div>
   );
 }
-
