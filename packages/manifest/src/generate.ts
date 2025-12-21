@@ -102,7 +102,7 @@ function buildVerifiedInstallerPipe(module: Module): string {
   const vi = module.verified_installer;
   if (!vi) return '';
 
-  const parts = [vi.runner];
+  const parts: string[] = [vi.runner];
   if (vi.args && vi.args.length > 0) {
     // Quote args that contain spaces
     for (const arg of vi.args) {
@@ -680,10 +680,41 @@ function generateMasterInstaller(manifest: Manifest): string {
 // Main
 // ============================================================
 
+/**
+ * Show help message
+ */
+function showHelp(): void {
+  console.log(`ACFS Manifest-to-Installer Generator
+
+Usage: bun run generate [options]
+
+Options:
+  --dry-run      Show what would be generated without writing files
+  --verbose      Show more details (with --dry-run: show content previews)
+  --validate     Validate manifest and checksums coverage, exit with status
+  --diff         Show diff between current and generated files
+  --help         Show this help message
+
+Examples:
+  bun run generate                 # Generate all files
+  bun run generate --dry-run       # Preview generation
+  bun run generate --validate      # Check for issues (CI friendly)
+  bun run generate --diff          # Show what would change
+`);
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const verbose = args.includes('--verbose');
+  const validateOnly = args.includes('--validate');
+  const diffMode = args.includes('--diff');
+  const help = args.includes('--help') || args.includes('-h');
+
+  if (help) {
+    showHelp();
+    process.exit(0);
+  }
 
   console.log('ACFS Manifest-to-Installer Generator');
   console.log('=====================================');
@@ -742,84 +773,114 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Ensure output directory exists
-  if (!dryRun) {
-    mkdirSync(OUTPUT_DIR, { recursive: true });
+  // --validate mode: validation already passed, print success and exit
+  if (validateOnly) {
+    console.log('✓ Manifest schema valid');
+    console.log('✓ Checksums.yaml coverage complete');
+    console.log('');
+    console.log('Validation passed.');
+    process.exit(0);
   }
 
-  const generatedFiles: string[] = [];
+  // Build map of all files we would generate
+  const filesToGenerate: Map<string, { content: string; mode: number }> = new Map();
 
-  // Generate category scripts
+  // Category scripts
   for (const category of categories) {
     const filename = `install_${category}.sh`;
     const filepath = join(OUTPUT_DIR, filename);
     const content = generateCategoryScript(manifest, category);
+    filesToGenerate.set(filepath, { content, mode: 0o755 });
+  }
 
-    if (dryRun) {
+  // Doctor checks
+  {
+    const filepath = join(OUTPUT_DIR, 'doctor_checks.sh');
+    const content = generateDoctorChecks(manifest);
+    filesToGenerate.set(filepath, { content, mode: 0o755 });
+  }
+
+  // Master installer
+  {
+    const filepath = join(OUTPUT_DIR, 'install_all.sh');
+    const content = generateMasterInstaller(manifest);
+    filesToGenerate.set(filepath, { content, mode: 0o755 });
+  }
+
+  // Manifest index
+  {
+    const filepath = join(OUTPUT_DIR, 'manifest_index.sh');
+    const content = generateManifestIndex(manifest, manifestSha256);
+    filesToGenerate.set(filepath, { content, mode: 0o644 });
+  }
+
+  // --diff mode: compare against existing files
+  if (diffMode) {
+    let hasDiff = false;
+    console.log('Comparing generated content against existing files...');
+    console.log('');
+
+    for (const [filepath, { content }] of filesToGenerate) {
+      const filename = filepath.replace(OUTPUT_DIR + '/', '');
+      if (existsSync(filepath)) {
+        const existing = readFileSync(filepath, 'utf-8');
+        if (existing !== content) {
+          hasDiff = true;
+          console.log(`[DIFF] ${filename}`);
+          if (verbose) {
+            // Show a simple line count diff
+            const existingLines = existing.split('\n').length;
+            const newLines = content.split('\n').length;
+            console.log(`       Existing: ${existingLines} lines, Generated: ${newLines} lines`);
+          }
+        } else {
+          console.log(`[OK]   ${filename}`);
+        }
+      } else {
+        hasDiff = true;
+        console.log(`[NEW]  ${filename}`);
+      }
+    }
+
+    console.log('');
+    if (hasDiff) {
+      console.log('Generated files would change. Run without --diff to update.');
+      process.exit(1);
+    } else {
+      console.log('All generated files are up to date.');
+      process.exit(0);
+    }
+  }
+
+  // --dry-run mode: just show what would be generated
+  if (dryRun) {
+    for (const [filepath, { content }] of filesToGenerate) {
+      const filename = filepath.replace(OUTPUT_DIR + '/', '');
       console.log(`[DRY-RUN] Would generate: ${filename}`);
       if (verbose) {
         console.log('---');
         console.log(content.slice(0, 500) + '...');
         console.log('---');
       }
-    } else {
-      writeFileSync(filepath, content, { mode: 0o755 });
-      console.log(`Generated: ${filename}`);
-      generatedFiles.push(filepath);
     }
+    console.log('');
+    console.log('Dry run complete. No files written.');
+    process.exit(0);
   }
 
-  // Generate doctor checks
-  {
-    const filename = 'doctor_checks.sh';
-    const filepath = join(OUTPUT_DIR, filename);
-    const content = generateDoctorChecks(manifest);
+  // Normal generation mode: write all files
+  mkdirSync(OUTPUT_DIR, { recursive: true });
 
-    if (dryRun) {
-      console.log(`[DRY-RUN] Would generate: ${filename}`);
-    } else {
-      writeFileSync(filepath, content, { mode: 0o755 });
-      console.log(`Generated: ${filename}`);
-      generatedFiles.push(filepath);
-    }
-  }
-
-  // Generate master installer
-  {
-    const filename = 'install_all.sh';
-    const filepath = join(OUTPUT_DIR, filename);
-    const content = generateMasterInstaller(manifest);
-
-    if (dryRun) {
-      console.log(`[DRY-RUN] Would generate: ${filename}`);
-    } else {
-      writeFileSync(filepath, content, { mode: 0o755 });
-      console.log(`Generated: ${filename}`);
-      generatedFiles.push(filepath);
-    }
-  }
-
-  // Generate manifest index (data-only)
-  {
-    const filename = 'manifest_index.sh';
-    const filepath = join(OUTPUT_DIR, filename);
-    const content = generateManifestIndex(manifest, manifestSha256);
-
-    if (dryRun) {
-      console.log(`[DRY-RUN] Would generate: ${filename}`);
-    } else {
-      writeFileSync(filepath, content, { mode: 0o644 });
-      console.log(`Generated: ${filename}`);
-      generatedFiles.push(filepath);
-    }
+  const generatedFiles: string[] = [];
+  for (const [filepath, { content, mode }] of filesToGenerate) {
+    writeFileSync(filepath, content, { mode });
+    const filename = filepath.replace(OUTPUT_DIR + '/', '');
+    console.log(`Generated: ${filename}`);
+    generatedFiles.push(filepath);
   }
 
   console.log('');
-  if (dryRun) {
-    console.log('Dry run complete. No files written.');
-  } else {
-    console.log(`Generated ${generatedFiles.length} files in ${OUTPUT_DIR}`);
-  }
+  console.log(`Generated ${generatedFiles.length} files in ${OUTPUT_DIR}`);
 }
 
 main().catch((err) => {
