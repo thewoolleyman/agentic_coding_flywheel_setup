@@ -175,7 +175,7 @@ if ! declare -f show_completion >/dev/null; then
         echo "║              ✓ Installation Complete!                         ║" >&2
         echo "╠═══════════════════════════════════════════════════════════════╣" >&2
         printf "║  Total time: %dm %02ds                                          ║\n" "$min" "$sec" >&2
-        printf "║  Phases completed: %d/%d                                       ║\n" "$total" "$total" >&2
+        printf "║  Phases completed: %d/%d                                        ║\n" "$total" "$total" >&2
         echo "║                                                               ║" >&2
         echo "║  NEXT STEPS:                                                  ║" >&2
         echo "║  1. Type 'exit' to disconnect                                 ║" >&2
