@@ -662,6 +662,7 @@ modules:
       tool: mcp_agent_mail
       runner: bash
       args: ["--dir", "/home/ubuntu/mcp_agent_mail", "--yes"]
+      fallback_url: "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail/main/scripts/install.sh"
       run_in_tmux: true   # Run in tmux to prevent blocking; server stays running
     install: []
     verify:

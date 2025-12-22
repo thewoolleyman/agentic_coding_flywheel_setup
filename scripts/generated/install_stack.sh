@@ -147,8 +147,8 @@ install_stack_mcp_agent_mail() {
 
             # Fallback to direct URL if security init failed
             if [[ -z "$install_cmd" ]]; then
-                log_error "No install URL available for stack.mcp_agent_mail"
-                false
+                install_cmd="curl -fsSL 'https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail/main/scripts/install.sh' | bash -s -- '--dir' '/home/ubuntu/mcp_agent_mail' '--yes'"
+
             fi
 
             # Create new detached tmux session and run the installer
