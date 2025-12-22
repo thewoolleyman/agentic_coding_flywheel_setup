@@ -892,7 +892,7 @@ setup_all_unconfigured() {
     for i in "${!services[@]}"; do
         local status="${SERVICE_STATUS[${services[$i]}]:-unknown}"
         if [[ "$status" != "configured" && "$status" != "not_installed" ]]; then
-            ((needs_setup++))
+            ((needs_setup += 1))
         fi
     done
 
@@ -916,7 +916,7 @@ setup_all_unconfigured() {
         local status="${SERVICE_STATUS[$svc]:-unknown}"
 
         if [[ "$status" != "configured" && "$status" != "not_installed" ]]; then
-            ((current++))
+            ((current += 1))
             echo ""
 
             if [[ "$HAS_GUM" == "true" ]]; then

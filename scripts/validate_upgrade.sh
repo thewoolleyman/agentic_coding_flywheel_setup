@@ -214,7 +214,7 @@ check_state_functions() {
             print_ok "$func"
         else
             print_fail "$func - not found"
-            ((missing++))
+            ((missing += 1))
         fi
     done
 
