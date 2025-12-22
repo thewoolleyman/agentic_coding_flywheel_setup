@@ -299,7 +299,7 @@ fetch_commit_sha() {
 
         # Extract commit date (format: "2025-12-21T10:30:00Z")
         local commit_date
-        commit_date=$(echo "$response" | grep -m1 '"date"' | head -1 | sed 's/.*"date"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+        commit_date=$(echo "$response" | grep -m1 '"date"' | sed 's/.*"date"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
         if [[ -n "$commit_date" ]]; then
             ACFS_COMMIT_DATE="$commit_date"
             # Calculate age
@@ -316,7 +316,10 @@ fetch_commit_sha() {
 
             if [[ "$now" -gt 0 && "$commit_ts" -gt 0 ]]; then
                 age_seconds=$((now - commit_ts))
-                if [[ $age_seconds -lt 60 ]]; then
+                # Handle negative age (clock skew / future commit)
+                if [[ $age_seconds -lt 0 ]]; then
+                    ACFS_COMMIT_AGE="just now"
+                elif [[ $age_seconds -lt 60 ]]; then
                     ACFS_COMMIT_AGE="${age_seconds}s ago"
                 elif [[ $age_seconds -lt 3600 ]]; then
                     ACFS_COMMIT_AGE="$((age_seconds / 60))m ago"
@@ -1573,6 +1576,8 @@ run_ubuntu_upgrade_phase() {
             if type -t state_update &>/dev/null; then
                 state_update ".ubuntu_upgrade.stage = \"not_started\""
             fi
+            # Set flag to skip redundant warning (user already confirmed before reboot)
+            local skip_upgrade_warning=true
             # Fall through to continue with upgrade
             ;;
         error)
@@ -1610,20 +1615,22 @@ run_ubuntu_upgrade_phase() {
     upgrade_path_display=$(echo "$upgrade_path" | tr '\n' ' ' | sed 's/ $//; s/ / → /g')
     log_info "Upgrade path: $current_version_str → $upgrade_path_display"
 
-    # Show warning and get confirmation (unless --yes mode)
-    if type -t ubuntu_show_upgrade_warning &>/dev/null; then
-        ubuntu_show_upgrade_warning
-    fi
+    # Show warning and get confirmation (unless --yes mode or resuming from pre-reboot)
+    if [[ "${skip_upgrade_warning:-}" != "true" ]]; then
+        if type -t ubuntu_show_upgrade_warning &>/dev/null; then
+            ubuntu_show_upgrade_warning
+        fi
 
-    if [[ "$YES_MODE" != "true" ]]; then
-        log_warn "Ubuntu upgrade will take 30-60 minutes per version and require reboots."
-        log_warn "Your SSH session will disconnect. Reconnect after each reboot."
-        echo ""
-        read -r -p "Proceed with Ubuntu upgrade? [y/N] " response
-        if [[ ! "$response" =~ ^[Yy] ]]; then
-            log_info "Ubuntu upgrade skipped by user"
-            log_info "Continuing with ACFS installation on Ubuntu $current_version_str"
-            return 0
+        if [[ "$YES_MODE" != "true" ]]; then
+            log_warn "Ubuntu upgrade will take 30-60 minutes per version and require reboots."
+            log_warn "Your SSH session will disconnect. Reconnect after each reboot."
+            echo ""
+            read -r -p "Proceed with Ubuntu upgrade? [y/N] " response
+            if [[ ! "$response" =~ ^[Yy] ]]; then
+                log_info "Ubuntu upgrade skipped by user"
+                log_info "Continuing with ACFS installation on Ubuntu $current_version_str"
+                return 0
+            fi
         fi
     fi
 
@@ -1632,7 +1639,7 @@ run_ubuntu_upgrade_phase() {
     if [[ -f /var/run/reboot-required ]]; then
         log_warn "System requires reboot before upgrade can proceed"
         if [[ -f /var/run/reboot-required.pkgs ]]; then
-            log_detail "Packages requiring reboot: $(cat /var/run/reboot-required.pkgs | tr '\n' ' ')"
+            log_detail "Packages requiring reboot: $(tr '\n' ' ' < /var/run/reboot-required.pkgs | sed 's/ $//')"
         fi
 
         if [[ "$YES_MODE" == "true" ]]; then
@@ -1661,7 +1668,13 @@ run_ubuntu_upgrade_phase() {
             fi
 
             if [[ -n "$acfs_source_dir" ]] && type -t upgrade_setup_infrastructure &>/dev/null; then
-                upgrade_setup_infrastructure "$acfs_source_dir" "$@"
+                if ! upgrade_setup_infrastructure "$acfs_source_dir" "$@"; then
+                    log_error "Failed to set up resume infrastructure. Cannot safely reboot."
+                    log_info "Please reboot manually and re-run the installer."
+                    return 1
+                fi
+            else
+                log_warn "Resume infrastructure not available. After reboot, re-run installer manually."
             fi
 
             # Trigger reboot

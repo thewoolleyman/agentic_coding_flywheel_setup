@@ -431,7 +431,7 @@ ubuntu_check_reboot_required() {
     if [[ -f /var/run/reboot-required ]]; then
         local pkgs=""
         if [[ -f /var/run/reboot-required.pkgs ]]; then
-            pkgs=$(cat /var/run/reboot-required.pkgs | tr '\n' ' ')
+            pkgs=$(tr '\n' ' ' < /var/run/reboot-required.pkgs | sed 's/ $//')
         fi
         log_error "System requires reboot before upgrade"
         if [[ -n "$pkgs" ]]; then

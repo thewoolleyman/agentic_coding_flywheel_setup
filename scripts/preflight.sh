@@ -274,6 +274,9 @@ check_network_installers() {
         local http_status
         http_status=$(curl -sL --max-time 15 --connect-timeout 10 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null) || http_status="000"
 
+        # Ensure http_status is a valid number (default to 000 if empty or invalid)
+        [[ "$http_status" =~ ^[0-9]+$ ]] || http_status="000"
+
         if [[ "$http_status" -ge 200 && "$http_status" -lt 400 ]]; then
             : # Success
         else
