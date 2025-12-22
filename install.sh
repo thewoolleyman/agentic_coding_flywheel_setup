@@ -1238,7 +1238,8 @@ run_as_target() {
     # This sets HOME and changes to the user's home directory,
     # matching the behavior of 'su - user' for consistent CWD
     if command_exists sudo; then
-        sudo -i -u "$user" env $env_vars -- "$@"
+        # Note: env doesn't accept -- as option separator, so we omit it
+        sudo -i -u "$user" env $env_vars "$@"
         return $?
     fi
 
