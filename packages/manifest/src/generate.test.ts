@@ -107,7 +107,8 @@ describe('Generated manifest_index.sh content', () => {
   test('all modules have phase entries', () => {
     for (const module of manifest.modules) {
       const expectedPhase = module.phase ?? 1;
-      expect(manifestIndexContent).toContain(`["${module.id}"]="${expectedPhase}"`);
+      // Keys must NOT use double quotes inside [] with set -u (causes "unbound variable")
+      expect(manifestIndexContent).toContain(`[${module.id}]="${expectedPhase}"`);
     }
   });
 
@@ -118,7 +119,8 @@ describe('Generated manifest_index.sh content', () => {
   test('dependencies are correctly formatted', () => {
     for (const module of manifest.modules) {
       const deps = module.dependencies?.join(',') ?? '';
-      expect(manifestIndexContent).toContain(`["${module.id}"]="${deps}"`);
+      // Keys must NOT use double quotes inside [] with set -u
+      expect(manifestIndexContent).toContain(`[${module.id}]="${deps}"`);
     }
   });
 
@@ -129,7 +131,8 @@ describe('Generated manifest_index.sh content', () => {
   test('function names follow convention', () => {
     for (const module of manifest.modules) {
       const expectedFunc = `install_${module.id.replace(/\./g, '_')}`;
-      expect(manifestIndexContent).toContain(`["${module.id}"]="${expectedFunc}"`);
+      // Keys must NOT use double quotes inside [] with set -u
+      expect(manifestIndexContent).toContain(`[${module.id}]="${expectedFunc}"`);
     }
   });
 
@@ -140,7 +143,8 @@ describe('Generated manifest_index.sh content', () => {
   test('categories are correctly derived from module IDs', () => {
     for (const module of manifest.modules) {
       const category = module.category ?? getModuleCategory(module.id);
-      expect(manifestIndexContent).toContain(`["${module.id}"]="${category}"`);
+      // Keys must NOT use double quotes inside [] with set -u
+      expect(manifestIndexContent).toContain(`[${module.id}]="${category}"`);
     }
   });
 
@@ -155,7 +159,8 @@ describe('Generated manifest_index.sh content', () => {
   test('default values match manifest', () => {
     for (const module of manifest.modules) {
       const expectedDefault = module.enabled_by_default ? '1' : '0';
-      expect(manifestIndexContent).toContain(`["${module.id}"]="${expectedDefault}"`);
+      // Keys must NOT use double quotes inside [] with set -u
+      expect(manifestIndexContent).toContain(`[${module.id}]="${expectedDefault}"`);
     }
   });
 
