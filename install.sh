@@ -394,9 +394,14 @@ install_gum_early() {
         return 0
     fi
 
-    # Step 2: Add apt repository
-    echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | \
-        $sudo_cmd tee /etc/apt/sources.list.d/charm.list > /dev/null 2>&1
+    # Step 2: Add apt repository (using DEB822 format to avoid .migrate warnings on upgrade)
+    $sudo_cmd tee /etc/apt/sources.list.d/charm.sources > /dev/null 2>&1 << 'EOF'
+Types: deb
+URIs: https://repo.charm.sh/apt/
+Suites: *
+Components: *
+Signed-By: /etc/apt/keyrings/charm.gpg
+EOF
 
     # Step 3: Update apt (this can be slow on fresh systems)
     echo -e "\033[0;90m      ↳ Updating package lists (may take 30-60s on fresh systems)...\033[0m" >&2
@@ -2105,7 +2110,7 @@ install_cli_tools() {
         log_detail "Installing gum for glamorous shell scripts"
         try_step "Creating apt keyrings directory" $SUDO mkdir -p /etc/apt/keyrings || true
         try_step_eval "Adding Charm apt key" "acfs_curl https://repo.charm.sh/apt/gpg.key | $SUDO gpg --dearmor -o /etc/apt/keyrings/charm.gpg 2>/dev/null" || true
-        try_step_eval "Adding Charm apt repo" "echo 'deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *' | $SUDO tee /etc/apt/sources.list.d/charm.list > /dev/null" || true
+        try_step_eval "Adding Charm apt repo" "printf 'Types: deb\nURIs: https://repo.charm.sh/apt/\nSuites: *\nComponents: *\nSigned-By: /etc/apt/keyrings/charm.gpg\n' | $SUDO tee /etc/apt/sources.list.d/charm.sources > /dev/null" || true
         try_step "Updating apt cache" $SUDO apt-get update -y || true
         if try_step "Installing gum" $SUDO apt-get install -y gum 2>/dev/null; then
             HAS_GUM=true
