@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { PartyPopper, BookOpen, ExternalLink, Sparkles, ArrowRight, GraduationCap, Terminal } from "lucide-react";
+import { PartyPopper, BookOpen, ExternalLink, Sparkles, ArrowRight, GraduationCap, Terminal, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CommandCard } from "@/components/command-card";
 import { markStepComplete, setCompletedSteps, TOTAL_STEPS } from "@/lib/wizardSteps";
@@ -158,6 +158,91 @@ export default function LaunchOnboardingPage() {
               for the CLI version.
             </span>
           </div>
+        </div>
+      </Card>
+
+      {/* Your Daily Workflow - Key pattern for ongoing use */}
+      <Card className="border-[oklch(0.78_0.16_75/0.3)] bg-[oklch(0.78_0.16_75/0.05)] p-6">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-5 w-5 text-[oklch(0.78_0.16_75)]" />
+            <h2 className="text-xl font-semibold">Your Daily Workflow</h2>
+          </div>
+          <p className="text-muted-foreground">
+            Here&apos;s what working with your VPS looks like day-to-day:
+          </p>
+        </div>
+
+        <div className="mt-6 space-y-6">
+          <div className="flex gap-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[oklch(0.78_0.16_75)] text-[oklch(0.15_0.02_75)] font-bold">
+              1
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">Connect to your VPS</h3>
+              <CommandCard
+                command={`ssh -i ~/.ssh/acfs_ed25519 ubuntu@${displayIP}`}
+                windowsCommand={`ssh -i $HOME\\.ssh\\acfs_ed25519 ubuntu@${displayIP}`}
+              />
+              <p className="text-sm text-muted-foreground">Open your terminal and SSH in.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[oklch(0.78_0.16_75)] text-[oklch(0.15_0.02_75)] font-bold">
+              2
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">Resume or create a session</h3>
+              <div className="space-y-2">
+                <CommandCard command="ntm list" description="See existing sessions" />
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                <div className="flex-1">
+                  <CommandCard command="ntm attach myproject" description="Resume a session" />
+                </div>
+                <div className="flex-1">
+                  <CommandCard command="ntm new myproject" description="Or create new" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[oklch(0.78_0.16_75)] text-[oklch(0.15_0.02_75)] font-bold">
+              3
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">Start coding with AI</h3>
+              <CommandCard command="cc" description="Launch Claude Code" />
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[oklch(0.78_0.16_75)] text-[oklch(0.15_0.02_75)] font-bold">
+              4
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">When you&apos;re done for the day</h3>
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                <div className="flex-1">
+                  <CommandCard command="Ctrl+B, then D" description="Detach from session" />
+                </div>
+                <div className="flex-1">
+                  <CommandCard command="exit" description="Disconnect from VPS" />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Your session keeps running! Come back tomorrow and everything is exactly where you left it.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-lg border border-[oklch(0.78_0.16_75/0.3)] bg-[oklch(0.78_0.16_75/0.1)] p-4 text-center">
+          <p className="text-sm font-medium">
+            💡 <strong>Remember:</strong> Connect → Session → Code → Detach
+          </p>
         </div>
       </Card>
 
