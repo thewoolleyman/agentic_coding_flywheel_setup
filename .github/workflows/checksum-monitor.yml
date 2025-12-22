@@ -56,6 +56,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          # Check if checksums.yaml actually changed (handles race condition)
+          if git diff --quiet checksums.yaml; then
+            echo "checksums.yaml unchanged (possibly already updated by another run)"
+            exit 0
+          fi
+
           # Generate commit message with details
           CHANGED_TOOLS=$(jq -r '.mismatches[].name' current.json 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
 
