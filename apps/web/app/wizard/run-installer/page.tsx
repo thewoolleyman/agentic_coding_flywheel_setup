@@ -189,7 +189,7 @@ export default function RunInstallerPage() {
               <code className="text-[oklch(0.75_0.18_195)]">curl -fsSL &quot;https://...&quot;</code>
               <p className="mt-1 font-sans text-muted-foreground">
                 Downloads the script from GitHub.{" "}
-                <code className="text-foreground/80">-f</code> = fail silently on error,{" "}
+                <code className="text-foreground/80">-f</code> = fail on HTTP errors,{" "}
                 <code className="text-foreground/80">-s</code> = silent mode,{" "}
                 <code className="text-foreground/80">-S</code> = show errors,{" "}
                 <code className="text-foreground/80">-L</code> = follow redirects.
