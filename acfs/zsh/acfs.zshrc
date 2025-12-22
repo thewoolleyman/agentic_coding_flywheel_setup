@@ -273,6 +273,14 @@ acfs() {
         return 1
       fi
       ;;
+    dashboard)
+      if [[ -f "$HOME/.acfs/scripts/lib/dashboard.sh" ]]; then
+        bash "$HOME/.acfs/scripts/lib/dashboard.sh" "$@"
+      else
+        echo "Error: dashboard.sh not found"
+        return 1
+      fi
+      ;;
     version|-v|--version)
       if [[ -f "$HOME/.acfs/VERSION" ]]; then
         cat "$HOME/.acfs/VERSION"
@@ -288,6 +296,7 @@ acfs() {
       echo "Commands:"
       echo "  info            Quick system overview (hostname, IP, uptime, progress)"
       echo "  cheatsheet      Command reference (aliases, shortcuts)"
+      echo "  dashboard       Generate a static HTML dashboard"
       echo "  continue        View installation progress (after Ubuntu upgrade)"
       echo "  services-setup  Configure AI agents and cloud services"
       echo "  doctor          Check system health and tool status"
