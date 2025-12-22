@@ -164,10 +164,10 @@ autoload -U add-zsh-hook
 _acfs_ls_after_cd() {
   # only in interactive shells
   [[ -o interactive ]] || return
-  if command -v eza &>/dev/null; then
-    eza --icons
-  elif command -v lsd &>/dev/null; then
+  if command -v lsd &>/dev/null; then
     lsd
+  elif command -v eza &>/dev/null; then
+    eza --icons
   else
     ls
   fi
