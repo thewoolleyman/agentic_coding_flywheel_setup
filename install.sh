@@ -1717,13 +1717,16 @@ run_ubuntu_upgrade_phase() {
             log_warn "Ubuntu upgrade will take 30-60 minutes per version and require reboots."
             log_warn "Your SSH session will disconnect. Reconnect after each reboot."
             echo ""
+
             if [[ -t 0 ]]; then
                 read -r -p "Proceed with Ubuntu upgrade? [y/N] " response
             elif [[ -r /dev/tty ]]; then
-                read -r -p "Proceed with Ubuntu upgrade? [y/N] " response < /dev/tty
+                echo -n "Proceed with Ubuntu upgrade? [y/N] " >&2
+                read -r response < /dev/tty
             else
                 log_fatal "--yes is required when no TTY is available"
             fi
+
             if [[ ! "$response" =~ ^[Yy] ]]; then
                 log_info "Ubuntu upgrade skipped by user"
                 log_info "Continuing with ACFS installation on Ubuntu $current_version_str"
