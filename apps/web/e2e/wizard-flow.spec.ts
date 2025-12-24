@@ -72,7 +72,7 @@ test.describe("Wizard Flow", () => {
 
   test("should navigate from home to wizard", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Click the primary CTA
     await page.getByRole("link", { name: /start the wizard/i }).click();
@@ -85,7 +85,7 @@ test.describe("Wizard Flow", () => {
 
   test("should complete step 1: OS selection", async ({ page }) => {
     await page.goto("/wizard/os-selection");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Page should load without getting stuck
     await expect(page.locator("h1").first()).toBeVisible({ timeout: 10000 });
@@ -106,13 +106,13 @@ test.describe("Wizard Flow", () => {
   test("should complete step 2: Install terminal", async ({ page }) => {
     // Set up prerequisite state
     await page.goto("/wizard/os-selection");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await page.getByRole('radio', { name: /Mac/i }).click();
     await page.getByRole('button', { name: /continue/i }).click();
 
     // Now on step 2
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/install-terminal"));
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("h1").first()).toContainText(/terminal/i);
 
     // Click continue
@@ -386,7 +386,7 @@ test.describe("Navigation", () => {
   test("should show mobile stepper on small screens", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto("/wizard/os-selection");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Mobile header should show step indicator (text spans elements, so check each part)
     await expect(page.locator('text="Step"').first()).toBeVisible({ timeout: 5000 });
@@ -491,7 +491,7 @@ test.describe("Command Card Copy Functionality", () => {
 test.describe("Beginner Guide", () => {
   test("should expand SimplerGuide on click", async ({ page }) => {
     await page.goto("/wizard/os-selection");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Find and click the SimplerGuide toggle - it MUST be visible
     const guideToggle = page.getByRole('button', { name: /make it simpler/i });
@@ -510,7 +510,7 @@ test.describe("Complete Wizard Flow Integration", () => {
     await page.goto("/wizard/os-selection");
     await page.evaluate(() => localStorage.clear());
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // On desktop projects, the OS should be auto-detected and the Continue button enabled.
     await expect(page.getByRole("button", { name: /^continue$/i })).toBeEnabled();
@@ -523,7 +523,7 @@ test.describe("Complete Wizard Flow Integration", () => {
     // Start fresh
     await page.goto("/");
     await page.evaluate(() => localStorage.clear());
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Step 1: Home -> OS Selection
     await page.getByRole("link", { name: /start the wizard/i }).click();
@@ -696,7 +696,7 @@ test.describe("Step 9: Run Installer Page", () => {
 
   test("should load run-installer page correctly", async ({ page }) => {
     await page.goto("/wizard/run-installer");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Page should load with correct heading
     await expect(page.locator("h1").first()).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
@@ -853,7 +853,7 @@ test.describe("Step 12: Status Check Page", () => {
 
   test("should load status-check page correctly", async ({ page }) => {
     await page.goto("/wizard/status-check");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     await expect(page.locator("h1").first()).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
     await expect(page.locator("h1").first()).toContainText(/status check/i);
@@ -916,7 +916,7 @@ test.describe("Step 13: Launch Onboarding Page", () => {
 
   test("should load launch-onboarding page correctly", async ({ page }) => {
     await page.goto("/wizard/launch-onboarding");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     await expect(page.locator("h1").first()).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
     // Should contain congratulations or setup complete message
@@ -1163,7 +1163,7 @@ test.describe("Edge Cases - Reload and Navigation", () => {
 
     // Reload the page
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // State should be preserved
     const os = await page.evaluate(() => localStorage.getItem("agent-flywheel-user-os"));
@@ -1231,7 +1231,7 @@ test.describe("Mobile Navigation", () => {
 
   test("should show mobile navigation buttons at bottom", async ({ page }) => {
     await page.goto("/wizard/os-selection");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const bottomNav = page.locator(".bottom-nav-safe");
     await expect(bottomNav.getByRole("button", { name: /^Back$/i })).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
@@ -1240,7 +1240,7 @@ test.describe("Mobile Navigation", () => {
 
   test("should have Back button disabled on first step", async ({ page }) => {
     await page.goto("/wizard/os-selection");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const bottomNav = page.locator(".bottom-nav-safe");
     const backButton = bottomNav.getByRole("button", { name: /^Back$/i });
@@ -1249,7 +1249,7 @@ test.describe("Mobile Navigation", () => {
 
   test("should navigate forward using mobile Next button", async ({ page }) => {
     await page.goto("/wizard/os-selection");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Select OS first
     await page.getByRole('radio', { name: /Mac/i }).click();
@@ -1280,7 +1280,7 @@ test.describe("Mobile Navigation", () => {
 
   test("should show mobile step indicator", async ({ page }) => {
     await page.goto("/wizard/generate-ssh-key?os=mac");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Should show step indicator with "Step X of Y" format
     // Using regex for partial match since text spans multiple elements
@@ -1289,7 +1289,7 @@ test.describe("Mobile Navigation", () => {
 
   test("should hide desktop sidebar on mobile", async ({ page }) => {
     await page.goto("/wizard/os-selection");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Desktop sidebar should not be visible
     const sidebar = page.locator('aside.hidden.md\\:block');
@@ -1309,7 +1309,7 @@ test.describe("OS Selection - Edge Cases", () => {
     await page.goto("/wizard/os-selection");
     await page.evaluate(() => localStorage.clear());
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // On mobile, Continue should be disabled until OS is selected
     await expect(page.getByRole("button", { name: /^continue$/i })).toBeDisabled();
@@ -1327,7 +1327,7 @@ test.describe("OS Selection - Edge Cases", () => {
     await page.goto("/wizard/os-selection");
     await page.evaluate(() => localStorage.clear());
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // There should be a "Detected" or "Selected" badge visible
     // (depending on whether user has clicked it)
@@ -1338,7 +1338,7 @@ test.describe("OS Selection - Edge Cases", () => {
     await page.goto("/wizard/os-selection");
     await page.evaluate(() => localStorage.clear());
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Select Mac
     await page.getByRole('radio', { name: /Mac/i }).click();
@@ -1357,7 +1357,7 @@ test.describe("OS Selection - Edge Cases", () => {
 test.describe("Accessibility", () => {
   test("should have proper heading hierarchy", async ({ page }) => {
     await page.goto("/wizard/os-selection");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Should have exactly one h1
     const h1Count = await page.locator("h1").count();
