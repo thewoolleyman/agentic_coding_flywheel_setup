@@ -442,25 +442,51 @@ info_render_json() {
     next_lesson=$(info_get_next_lesson)
 
     # Build JSON manually for compatibility (jq might not be available)
+    # Ensure all string values are JSON-escaped so output is always valid JSON.
+    _info_json_escape() {
+        local s="$1"
+        s="${s//\\/\\\\}"      # \ -> \\
+        s="${s//\"/\\\"}"      # " -> \"
+        s="${s//$'\n'/\\n}"    # newline -> \n
+        s="${s//$'\r'/\\r}"    # carriage return -> \r
+        s="${s//$'\t'/\\t}"    # tab -> \t
+        printf '%s' "$s"
+    }
+
+    [[ "$lessons_completed" =~ ^[0-9]+$ ]] || lessons_completed=0
+    [[ "$lessons_total" =~ ^[0-9]+$ ]] || lessons_total=0
+
+    local hostname_json ip_json uptime_json os_version_json os_codename_json
+    hostname_json="$(_info_json_escape "$hostname")"
+    ip_json="$(_info_json_escape "$ip")"
+    uptime_json="$(_info_json_escape "$uptime")"
+    os_version_json="$(_info_json_escape "$os_version")"
+    os_codename_json="$(_info_json_escape "$os_codename")"
+
+    local install_date_json skipped_tools_json next_lesson_json
+    install_date_json="$(_info_json_escape "$install_date")"
+    skipped_tools_json="$(_info_json_escape "$skipped_tools")"
+    next_lesson_json="$(_info_json_escape "$next_lesson")"
+
     cat <<EOF
 {
   "system": {
-    "hostname": "$hostname",
-    "ip": "$ip",
-    "uptime": "$uptime",
+    "hostname": "$hostname_json",
+    "ip": "$ip_json",
+    "uptime": "$uptime_json",
     "os": {
-      "version": "$os_version",
-      "codename": "$os_codename"
+      "version": "$os_version_json",
+      "codename": "$os_codename_json"
     }
   },
   "installation": {
-    "date": "$install_date",
-    "skipped_tools": "$skipped_tools"
+    "date": "$install_date_json",
+    "skipped_tools": "$skipped_tools_json"
   },
   "onboard": {
     "lessons_completed": $lessons_completed,
     "total_lessons": $lessons_total,
-    "next_lesson": "$next_lesson"
+    "next_lesson": "$next_lesson_json"
   },
   "quick_commands": [
     {"cmd": "cc", "desc": "Launch Claude Code"},
