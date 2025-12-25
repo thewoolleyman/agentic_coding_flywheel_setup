@@ -537,10 +537,10 @@ update_agents() {
         log_item "skip" "Claude Code" "not installed"
     fi
 
-    # Codex CLI via bun
+    # Codex CLI via bun (--trust allows postinstall scripts)
     if cmd_exists codex || [[ "$FORCE_MODE" == "true" ]]; then
         capture_version_before "codex"
-        run_cmd "Codex CLI" "$bun_bin" install -g @openai/codex@latest
+        run_cmd "Codex CLI" "$bun_bin" install -g --trust @openai/codex@latest
         # Show version change without double-counting
         if capture_version_after "codex"; then
             [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[codex]} → ${VERSION_AFTER[codex]}${NC}"
@@ -549,10 +549,10 @@ update_agents() {
         log_item "skip" "Codex CLI" "not installed (use --force to install)"
     fi
 
-    # Gemini CLI via bun
+    # Gemini CLI via bun (--trust allows postinstall scripts)
     if cmd_exists gemini || [[ "$FORCE_MODE" == "true" ]]; then
         capture_version_before "gemini"
-        run_cmd "Gemini CLI" "$bun_bin" install -g @google/gemini-cli@latest
+        run_cmd "Gemini CLI" "$bun_bin" install -g --trust @google/gemini-cli@latest
         # Show version change without double-counting
         if capture_version_after "gemini"; then
             [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[gemini]} → ${VERSION_AFTER[gemini]}${NC}"
@@ -613,23 +613,23 @@ update_cloud() {
         return 0
     fi
 
-    # Wrangler
+    # Wrangler (--trust allows postinstall scripts for native binaries)
     if cmd_exists wrangler || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Wrangler (Cloudflare)" "$bun_bin" install -g wrangler@latest
+        run_cmd "Wrangler (Cloudflare)" "$bun_bin" install -g --trust wrangler@latest
     else
         log_item "skip" "Wrangler" "not installed"
     fi
 
-    # Supabase
+    # Supabase (--trust allows postinstall scripts for native binaries)
     if cmd_exists supabase || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Supabase CLI" "$bun_bin" install -g supabase@latest
+        run_cmd "Supabase CLI" "$bun_bin" install -g --trust supabase@latest
     else
         log_item "skip" "Supabase CLI" "not installed"
     fi
 
-    # Vercel
+    # Vercel (--trust allows postinstall scripts for native binaries)
     if cmd_exists vercel || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Vercel CLI" "$bun_bin" install -g vercel@latest
+        run_cmd "Vercel CLI" "$bun_bin" install -g --trust vercel@latest
     else
         log_item "skip" "Vercel CLI" "not installed"
     fi

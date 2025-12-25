@@ -492,7 +492,8 @@ modules:
       command: "test -x ~/.local/bin/codex"
     install:
       # Install via bun, then create wrapper that uses bun as runtime (faster than node)
-      - ~/.bun/bin/bun install -g @openai/codex@latest
+      # Use --trust to allow postinstall scripts
+      - ~/.bun/bin/bun install -g --trust @openai/codex@latest
       - |
         mkdir -p ~/.local/bin
         cat > ~/.local/bin/codex << 'WRAPPER'
@@ -518,7 +519,8 @@ modules:
       command: "test -x ~/.local/bin/gemini"
     install:
       # Install via bun, then create wrapper that uses bun as runtime (faster than node)
-      - ~/.bun/bin/bun install -g @google/gemini-cli@latest
+      # Use --trust to allow postinstall scripts
+      - ~/.bun/bin/bun install -g --trust @google/gemini-cli@latest
       - |
         mkdir -p ~/.local/bin
         cat > ~/.local/bin/gemini << 'WRAPPER'
