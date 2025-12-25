@@ -18,19 +18,32 @@ declare global {
   }
 }
 
-// Validate GA4 Measurement ID format (G-XXXXXXXXXX or UA-XXXXXXXX-X)
-function isValidGaMeasurementId(value: unknown): value is string {
-  if (typeof value !== 'string' || value.length === 0) return false;
-  // GA4 format: G-XXXXXXXXXX (10+ alphanumeric after G-)
-  // Universal Analytics format: UA-XXXXXXXX-X
-  return /^(G-[A-Z0-9]{10,}|UA-\d+-\d+)$/.test(value);
+function sanitizeGaMeasurementId(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+
+  let trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  // Handle accidental quoting in env var values (common copy/paste mistake).
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    trimmed = trimmed.slice(1, -1).trim();
+  }
+
+  // GA4 measurement IDs typically look like: G-XXXXXXXXXX
+  // Support legacy UA format as well (gtag supports both).
+  if (/^G-[A-Z0-9]+$/i.test(trimmed) || /^UA-\d+-\d+$/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return undefined;
 }
 
-// Measurement ID from environment (validated to prevent script injection)
+// Measurement ID from environment (sanitized to prevent script injection / prod crashes)
 const GA_MEASUREMENT_ID_RAW = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-export const GA_MEASUREMENT_ID = isValidGaMeasurementId(GA_MEASUREMENT_ID_RAW)
-  ? GA_MEASUREMENT_ID_RAW
-  : undefined;
+export const GA_MEASUREMENT_ID = sanitizeGaMeasurementId(GA_MEASUREMENT_ID_RAW);
 
 // Check if analytics is available
 export const isAnalyticsEnabled = (): boolean => {
@@ -57,6 +70,7 @@ export const sendServerEvent = async (
   params?: Record<string, string | number | boolean>
 ): Promise<void> => {
   if (typeof window === 'undefined') return;
+  if (!GA_MEASUREMENT_ID) return;
 
   try {
     await fetch('/api/track', {
