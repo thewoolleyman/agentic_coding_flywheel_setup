@@ -4,7 +4,7 @@ import { test, expect, type Page } from "@playwright/test";
  * Production smoke tests that run against the live site.
  * These are critical for catching deployment issues.
  *
- * Run with: PLAYWRIGHT_BASE_URL=https://agent-flywheel.com npx playwright test production
+ * Run with: cd apps/web && PLAYWRIGHT_BASE_URL=https://agent-flywheel.com bun run test production
  */
 
 type ErrorCollector = {
