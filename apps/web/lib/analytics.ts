@@ -1,6 +1,7 @@
 /**
  * Agent Flywheel Analytics Library
  * Comprehensive GA4 instrumentation for deep user insights
+ * Build timestamp: 2025-12-25T17:35:00Z
  */
 
 import { safeGetItem, safeSetItem, safeGetJSON, safeSetJSON } from './utils';
