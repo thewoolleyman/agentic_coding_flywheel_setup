@@ -2393,6 +2393,14 @@ install_languages_legacy_lang() {
         try_step "Installing Bun" acfs_run_verified_upstream_script_as_target "bun" "bash" || return 1
     fi
 
+    # Create node symlink to bun for Node.js compatibility
+    # Many tools (codex, gemini, etc.) have #!/usr/bin/env node shebangs
+    local node_link="$TARGET_HOME/.bun/bin/node"
+    if [[ -x "$bun_bin" ]] && [[ ! -e "$node_link" ]]; then
+        log_detail "Creating node symlink for Bun compatibility"
+        try_step "Creating node symlink" run_as_target ln -s "$bun_bin" "$node_link" || log_warn "Failed to create node symlink"
+    fi
+
     # Rust nightly (install as target user)
     # We use nightly for latest features and to install tools like dust/lsd
     local cargo_bin="$TARGET_HOME/.cargo/bin/cargo"
