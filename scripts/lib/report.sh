@@ -44,26 +44,28 @@ draw_box() {
     local lines=("$@")
     local width=60
 
-    # Top border
-    echo -n "+"
-    printf '%.0s-' $(seq 1 $((width - 2)))
-    echo "+"
+    {
+        # Top border
+        echo -n "+"
+        printf '%.0s-' $(seq 1 $((width - 2)))
+        echo "+"
 
-    # Title
-    echo "| ${title}"
-    echo -n "+"
-    printf '%.0s-' $(seq 1 $((width - 2)))
-    echo "+"
+        # Title
+        echo "| ${title}"
+        echo -n "+"
+        printf '%.0s-' $(seq 1 $((width - 2)))
+        echo "+"
 
-    # Content lines
-    for line in "${lines[@]}"; do
-        echo "| ${line}"
-    done
+        # Content lines
+        for line in "${lines[@]}"; do
+            echo "| ${line}"
+        done
 
-    # Bottom border
-    echo -n "+"
-    printf '%.0s-' $(seq 1 $((width - 2)))
-    echo "+"
+        # Bottom border
+        echo -n "+"
+        printf '%.0s-' $(seq 1 $((width - 2)))
+        echo "+"
+    } >&2
 }
 
 # Draw a fancy box using gum (if available)
@@ -73,26 +75,30 @@ draw_box_gum() {
     local content="$2"
 
     if command -v gum &>/dev/null; then
-        # Prepend title if provided
-        local full_content
-        if [[ -n "$title" ]]; then
-            full_content="${title}\n\n${content}"
-        else
-            full_content="$content"
-        fi
+        {
+            # Prepend title if provided
+            local full_content
+            if [[ -n "$title" ]]; then
+                full_content="${title}\n\n${content}"
+            else
+                full_content="$content"
+            fi
 
-        echo -e "$full_content" | gum style \
-            --border double \
-            --border-foreground 196 \
-            --padding "1 2" \
-            --margin "1" \
-            --width 66
+            echo -e "$full_content" | gum style \
+                --border double \
+                --border-foreground 196 \
+                --padding "1 2" \
+                --margin "1" \
+                --width 66
+        } >&2
     else
-        # Fallback to simple box
-        if [[ -n "$title" ]]; then
-            echo "=== $title ==="
-        fi
-        echo "$content"
+        {
+            # Fallback to simple box
+            if [[ -n "$title" ]]; then
+                echo "=== $title ==="
+            fi
+            echo "$content"
+        } >&2
     fi
 }
 
@@ -137,13 +143,15 @@ report_failure() {
         resume_cmd="$resume_cmd --yes"
     fi
 
-    # Terminal output
-    echo ""
-    if command -v gum &>/dev/null; then
-        report_failure_gum "$phase_num" "$total_phases" "$phase_name" "$step" "$error" "$suggested_fix" "$resume_cmd"
-    else
-        report_failure_plain "$phase_num" "$total_phases" "$phase_name" "$step" "$error" "$error_output" "$suggested_fix" "$resume_cmd"
-    fi
+    # Terminal output (stderr to keep stdout clean for piping)
+    {
+        echo ""
+        if command -v gum &>/dev/null; then
+            report_failure_gum "$phase_num" "$total_phases" "$phase_name" "$step" "$error" "$suggested_fix" "$resume_cmd"
+        else
+            report_failure_plain "$phase_num" "$total_phases" "$phase_name" "$step" "$error" "$error_output" "$suggested_fix" "$resume_cmd"
+        fi
+    } >&2
 
     # JSON logging
     report_failure_json "$phase_num" "$total_phases" "$phase" "$phase_name" "$step" "$error" "$error_output" "$suggested_fix"
@@ -405,44 +413,47 @@ report_success() {
         total_phases="$phase_count"
     fi
 
-    echo ""
-    if command -v gum &>/dev/null; then
-        gum style \
-            --foreground 46 \
-            --bold \
-            --border double \
-            --border-foreground 46 \
-            --padding "1 2" \
-            --margin "1 0" \
-            "  INSTALLATION COMPLETE!" \
-            "" \
-            "  Total time: ${time_str}" \
-            "  Phases installed: ${phase_count}/${total_phases}" \
-            "" \
-            "  Next steps:" \
-            "    1. Log out and back in (or run: source ~/.zshrc)" \
-            "    2. Run: onboard" \
-            "    3. Start coding with: cc, cod, or gmi" \
-            "" \
-            "  Logs: ${ACFS_LOG_FILE}"
-    else
-        echo -e "${REPORT_GREEN}${REPORT_BOLD}"
-        echo "================================================================"
-        echo "  INSTALLATION COMPLETE!"
-        echo "================================================================${REPORT_NC}"
+    # Terminal output (stderr to keep stdout clean for piping)
+    {
         echo ""
-        echo "  Total time: ${time_str}"
-        echo "  Phases installed: ${phase_count}/${total_phases}"
-        echo ""
-        echo "  Next steps:"
-        echo "    1. Log out and back in (or run: source ~/.zshrc)"
-        echo "    2. Run: onboard"
-        echo "    3. Start coding with: cc, cod, or gmi"
-        echo ""
-        echo "  Logs: ${ACFS_LOG_FILE}"
-        echo ""
-        echo -e "${REPORT_GREEN}================================================================${REPORT_NC}"
-    fi
+        if command -v gum &>/dev/null; then
+            gum style \
+                --foreground 46 \
+                --bold \
+                --border double \
+                --border-foreground 46 \
+                --padding "1 2" \
+                --margin "1 0" \
+                "  INSTALLATION COMPLETE!" \
+                "" \
+                "  Total time: ${time_str}" \
+                "  Phases installed: ${phase_count}/${total_phases}" \
+                "" \
+                "  Next steps:" \
+                "    1. Log out and back in (or run: source ~/.zshrc)" \
+                "    2. Run: onboard" \
+                "    3. Start coding with: cc, cod, or gmi" \
+                "" \
+                "  Logs: ${ACFS_LOG_FILE}"
+        else
+            echo -e "${REPORT_GREEN}${REPORT_BOLD}"
+            echo "================================================================"
+            echo "  INSTALLATION COMPLETE!"
+            echo "================================================================${REPORT_NC}"
+            echo ""
+            echo "  Total time: ${time_str}"
+            echo "  Phases installed: ${phase_count}/${total_phases}"
+            echo ""
+            echo "  Next steps:"
+            echo "    1. Log out and back in (or run: source ~/.zshrc)"
+            echo "    2. Run: onboard"
+            echo "    3. Start coding with: cc, cod, or gmi"
+            echo ""
+            echo "  Logs: ${ACFS_LOG_FILE}"
+            echo ""
+            echo -e "${REPORT_GREEN}================================================================${REPORT_NC}"
+        fi
+    } >&2
 
     # Log success
     local json_entry
@@ -471,23 +482,26 @@ report_warning() {
     local message="$1"
     local details="${2:-}"
 
-    echo ""
-    if command -v gum &>/dev/null; then
-        gum style \
-            --foreground 208 \
-            --bold \
-            "Warning: ${message}"
-        if [[ -n "$details" ]]; then
-            gum style --faint "  ${details}"
+    # Terminal output (stderr to keep stdout clean for piping)
+    {
+        echo ""
+        if command -v gum &>/dev/null; then
+            gum style \
+                --foreground 208 \
+                --bold \
+                "Warning: ${message}"
+            if [[ -n "$details" ]]; then
+                gum style --faint "  ${details}"
+            fi
+            gum style --faint "  Installer will continue. Re-run with --resume to retry failed steps."
+        else
+            echo -e "${REPORT_YELLOW}${REPORT_BOLD}Warning:${REPORT_NC} ${message}"
+            if [[ -n "$details" ]]; then
+                echo -e "  ${REPORT_GRAY}${details}${REPORT_NC}"
+            fi
+            echo -e "  ${REPORT_GRAY}Installer will continue. Re-run with --resume to retry failed steps.${REPORT_NC}"
         fi
-        gum style --faint "  Installer will continue. Re-run with --resume to retry failed steps."
-    else
-        echo -e "${REPORT_YELLOW}${REPORT_BOLD}Warning:${REPORT_NC} ${message}"
-        if [[ -n "$details" ]]; then
-            echo -e "  ${REPORT_GRAY}${details}${REPORT_NC}"
-        fi
-        echo -e "  ${REPORT_GRAY}Installer will continue. Re-run with --resume to retry failed steps.${REPORT_NC}"
-    fi
+    } >&2
 }
 
 # ============================================================
@@ -516,21 +530,24 @@ report_skipped_summary() {
         return 0  # Nothing skipped
     fi
 
-    echo ""
-    if command -v gum &>/dev/null; then
-        gum style --foreground 208 --bold "Skipped Items:"
-    else
-        echo -e "${REPORT_YELLOW}${REPORT_BOLD}Skipped Items:${REPORT_NC}"
-    fi
+    # Terminal output (stderr to keep stdout clean for piping)
+    {
+        echo ""
+        if command -v gum &>/dev/null; then
+            gum style --foreground 208 --bold "Skipped Items:"
+        else
+            echo -e "${REPORT_YELLOW}${REPORT_BOLD}Skipped Items:${REPORT_NC}"
+        fi
 
-    if [[ -n "$skipped_tools" && "$skipped_tools" != "[]" && "$skipped_tools" != "null" ]]; then
-        echo "  Tools: $skipped_tools"
-    fi
+        if [[ -n "$skipped_tools" && "$skipped_tools" != "[]" && "$skipped_tools" != "null" ]]; then
+            echo "  Tools: $skipped_tools"
+        fi
 
-    if [[ -n "$skipped_phases" && "$skipped_phases" != "[]" && "$skipped_phases" != "null" ]]; then
-        echo "  Phases: $skipped_phases"
-    fi
+        if [[ -n "$skipped_phases" && "$skipped_phases" != "[]" && "$skipped_phases" != "null" ]]; then
+            echo "  Phases: $skipped_phases"
+        fi
 
-    echo ""
-    echo "These items can be installed later with: acfs update --force"
+        echo ""
+        echo "These items can be installed later with: acfs update --force"
+    } >&2
 }
