@@ -1286,6 +1286,12 @@ run_as_target() {
     # HOME is set explicitly to ensure consistent home directory
     local env_vars="UV_NO_CONFIG=1 HOME=$user_home"
 
+    # Pass ACFS context variables to target user environment
+    if [[ -n "${ACFS_BOOTSTRAP_DIR:-}" ]]; then env_vars+=" ACFS_BOOTSTRAP_DIR=$ACFS_BOOTSTRAP_DIR"; fi
+    if [[ -n "${SCRIPT_DIR:-}" ]]; then env_vars+=" SCRIPT_DIR=$SCRIPT_DIR"; fi
+    if [[ -n "${ACFS_RAW:-}" ]]; then env_vars+=" ACFS_RAW=$ACFS_RAW"; fi
+    if [[ -n "${ACFS_VERSION:-}" ]]; then env_vars+=" ACFS_VERSION=$ACFS_VERSION"; fi
+
     # Already the target user
     if [[ "$(whoami)" == "$user" ]]; then
         cd "$user_home" 2>/dev/null || true
