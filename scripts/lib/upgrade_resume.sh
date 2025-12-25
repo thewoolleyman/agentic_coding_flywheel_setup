@@ -77,13 +77,13 @@ export UBUNTU_TARGET_VERSION_NUM
 log() {
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo "[$timestamp] $*" | tee -a "$ACFS_LOG"
+    echo "[$timestamp] $*" | tee -a "$ACFS_LOG" || true
 }
 
 log_error() {
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo "[$timestamp] ERROR: $*" | tee -a "$ACFS_LOG" >&2
+    echo "[$timestamp] ERROR: $*" | tee -a "$ACFS_LOG" >&2 || true
 }
 
 # Cleanup function - disables the service to prevent loops
@@ -156,9 +156,16 @@ remove_motd() {
 # Update state to mark upgrade as complete
 mark_state_complete() {
     if [[ -f "$ACFS_STATE_FILE" ]] && command -v jq &>/dev/null; then
-        local tmp_file="${ACFS_STATE_FILE}.tmp"
+        local tmp_file=""
+        tmp_file="$(mktemp "${ACFS_STATE_FILE}.tmp.XXXXXX" 2>/dev/null)" || tmp_file=""
+
+        if [[ -z "$tmp_file" ]]; then
+            log_error "mktemp failed; skipping state update"
+            return 0
+        fi
+
         if jq '.ubuntu_upgrade.current_stage = "completed" | .ubuntu_upgrade.needs_reboot = false' "$ACFS_STATE_FILE" > "$tmp_file" 2>/dev/null; then
-            mv "$tmp_file" "$ACFS_STATE_FILE"
+            mv "$tmp_file" "$ACFS_STATE_FILE" || true
             log "State updated to 'completed'"
         else
             rm -f "$tmp_file" 2>/dev/null || true

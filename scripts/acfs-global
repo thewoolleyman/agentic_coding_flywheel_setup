@@ -113,9 +113,43 @@ main() {
         target_home="${target_home:-/home/$target_user}"
 
         echo "Expected at: $target_home/.local/bin/acfs (or $target_home/.acfs/bin/acfs)" >&2
+
+        # Try to help the user identify other installs (common cases: installed under a different /home user).
+        local -a candidates=()
+        local candidate candidate_user
+        shopt -s nullglob
+        candidates=(/home/*/.local/bin/acfs /home/*/.acfs/bin/acfs /root/.local/bin/acfs /root/.acfs/bin/acfs)
+        shopt -u nullglob
+
+        if (( ${#candidates[@]} > 0 )); then
+            echo "" >&2
+            echo "Detected other ACFS installs:" >&2
+            for candidate in "${candidates[@]}"; do
+                [[ -x "$candidate" ]] || continue
+
+                if [[ "$candidate" == /home/* ]]; then
+                    candidate_user="$(printf '%s' "$candidate" | cut -d/ -f3)"
+                elif [[ "$candidate" == /root/* ]]; then
+                    candidate_user="root"
+                else
+                    candidate_user=""
+                fi
+
+                if [[ -n "$candidate_user" ]]; then
+                    echo "  - $candidate_user: $candidate" >&2
+                    echo "    Try: sudo -u \"$candidate_user\" -H -- \"$0\" [args...]" >&2
+                else
+                    echo "  - $candidate" >&2
+                fi
+            done
+        fi
+
         echo "" >&2
-        echo "If ACFS was installed for a different user, switch to that user and re-run:" >&2
-        echo "  su - $target_user" >&2
+        echo "If ACFS was installed for a different user, run this wrapper as that user, e.g.:" >&2
+        echo "  sudo -u <user> -H -- \"$0\" [args...]" >&2
+        echo "" >&2
+        echo "You can also override state discovery:" >&2
+        echo "  ACFS_STATE_FILE=/path/to/state.json \"$0\" [args...]" >&2
         exit 1
     fi
 
