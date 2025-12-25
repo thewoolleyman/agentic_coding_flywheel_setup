@@ -14,6 +14,14 @@ import {
   Layers,
   Play,
   TrendingUp,
+  BookOpen,
+  ExternalLink,
+  CheckCircle,
+  Code,
+  Database,
+  Terminal,
+  Lightbulb,
+  Shield,
 } from "lucide-react";
 import {
   Section,
@@ -160,6 +168,198 @@ Write it to PLAN_FOR_CASS_MEMORY_SYSTEM.md"`}
           blueprint covering architecture, data models, CLI commands, the
           reflection pipeline, storage, and implementation roadmap.
         </Paragraph>
+      </Section>
+
+      <Divider />
+
+      {/* Anatomy of a Great Plan */}
+      <Section
+        title="Anatomy of a Great Plan"
+        icon={<BookOpen className="h-5 w-5" />}
+        delay={0.22}
+      >
+        <Paragraph>
+          The plan is the bedrock of a successful agentic project. Let&apos;s
+          dissect what makes{" "}
+          <a
+            href="https://github.com/Dicklesworthstone/cass_memory_system/blob/main/PLAN_FOR_CASS_MEMORY_SYSTEM.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline inline-flex items-center gap-1"
+          >
+            the actual 5,600+ line plan
+            <ExternalLink className="h-3 w-3" />
+          </a>{" "}
+          so effective.
+        </Paragraph>
+
+        {/* Document Structure */}
+        <div className="mt-8">
+          <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Layers className="h-5 w-5 text-violet-400" />
+            Document Structure: 11 Major Sections
+          </h4>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <PlanSectionCard
+              number={1}
+              title="Executive Summary"
+              description="Problem statement, three-layer solution, key innovations table"
+              icon={<Rocket className="h-4 w-4" />}
+            />
+            <PlanSectionCard
+              number={2}
+              title="Core Architecture"
+              description="Cognitive model, ACE pipeline, 7 design principles"
+              icon={<Brain className="h-4 w-4" />}
+            />
+            <PlanSectionCard
+              number={3}
+              title="Data Models"
+              description="TypeScript schemas, confidence decay algorithm, validation rules"
+              icon={<Database className="h-4 w-4" />}
+            />
+            <PlanSectionCard
+              number={4}
+              title="CLI Commands"
+              description="15+ commands with usage examples and JSON outputs"
+              icon={<Terminal className="h-4 w-4" />}
+            />
+            <PlanSectionCard
+              number={5}
+              title="Reflection Pipeline"
+              description="Generator, Reflector, Validator, Curator phases"
+              icon={<Layers className="h-4 w-4" />}
+            />
+            <PlanSectionCard
+              number={6}
+              title="Integration"
+              description="Search wrapper, error handling, secret sanitization"
+              icon={<Code className="h-4 w-4" />}
+            />
+            <PlanSectionCard
+              number={7}
+              title="LLM Integration"
+              description="Provider abstraction, Zod schemas, prompt templates"
+              icon={<Bot className="h-4 w-4" />}
+            />
+            <PlanSectionCard
+              number={8}
+              title="Storage & Persistence"
+              description="Directory structure, cascading config, embeddings"
+              icon={<Database className="h-4 w-4" />}
+            />
+            <PlanSectionCard
+              number={9}
+              title="Agent Integration"
+              description="AGENTS.md template, MCP server design"
+              icon={<Users className="h-4 w-4" />}
+            />
+            <PlanSectionCard
+              number={10}
+              title="Implementation Roadmap"
+              description="Phased delivery with ROI priorities"
+              icon={<TrendingUp className="h-4 w-4" />}
+            />
+            <PlanSectionCard
+              number={11}
+              title="Comparison Matrix"
+              description="Feature checklist against competing proposals"
+              icon={<CheckCircle className="h-4 w-4" />}
+            />
+          </div>
+        </div>
+
+        {/* Key Patterns */}
+        <div className="mt-8">
+          <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Lightbulb className="h-5 w-5 text-amber-400" />
+            Patterns That Make Plans Effective
+          </h4>
+          <div className="space-y-4">
+            <PlanPatternCard
+              title="Theory-First Approach"
+              description="Each major feature includes: schema definition → algorithm → usage examples → implementation notes. Never jumps to code before explaining the why."
+              gradient="from-violet-500/20 to-purple-500/20"
+            />
+            <PlanPatternCard
+              title="Progressive Elaboration"
+              description="Simple concepts expand into nested detail. 'Bullet maturity' starts as a concept, becomes a state machine, then includes transition rules and decay calculations."
+              gradient="from-emerald-500/20 to-teal-500/20"
+            />
+            <PlanPatternCard
+              title="Concrete Examples Throughout"
+              description="Not just 'validate inputs' but actual TypeScript interfaces, JSON outputs, bash command examples, and ASCII diagrams showing data flow."
+              gradient="from-sky-500/20 to-blue-500/20"
+            />
+            <PlanPatternCard
+              title="Edge Cases Anticipated"
+              description="The plan addresses error handling for cass timeouts, toxic bullet blocking, stale rule detection, and secret sanitization before implementation begins."
+              gradient="from-amber-500/20 to-orange-500/20"
+            />
+            <PlanPatternCard
+              title="Comparison Tables"
+              description="Key decisions contextualized against alternatives. Shows trade-offs between approaches from different model proposals."
+              gradient="from-rose-500/20 to-pink-500/20"
+            />
+          </div>
+        </div>
+
+        {/* Distinctive Innovations */}
+        <div className="mt-8">
+          <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Shield className="h-5 w-5 text-emerald-400" />
+            Distinctive Innovations in This Plan
+          </h4>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <InnovationCard
+              title="Confidence Decay Half-Life"
+              description="Rules lose credibility over time. Harmful events weighted 4× helpful ones. Full algorithm with decay factors specified."
+            />
+            <InnovationCard
+              title="Anti-Pattern Inversion"
+              description="Harmful rules converted to 'DON'T do X' instead of deleted, preserving the learning while inverting the advice."
+            />
+            <InnovationCard
+              title="Evidence-Count Gate"
+              description="Pre-LLM heuristic filter that saves API calls. Rules need minimum evidence before promotion."
+            />
+            <InnovationCard
+              title="Cascading Config"
+              description="Global user playbooks + repo-level playbooks merged intelligently with conflict resolution."
+            />
+          </div>
+        </div>
+
+        {/* What to Include Checklist */}
+        <div className="mt-8">
+          <TipBox variant="tip">
+            <strong>What Your Plans Should Include:</strong>
+            <ul className="mt-2 space-y-1 text-sm">
+              <li>• <strong>Executive summary</strong> - Problem + solution in 1 page</li>
+              <li>• <strong>Data models</strong> - TypeScript/Zod schemas for all entities</li>
+              <li>• <strong>CLI/API surface</strong> - Every command with examples</li>
+              <li>• <strong>Architecture diagrams</strong> - ASCII boxes showing data flow</li>
+              <li>• <strong>Error handling</strong> - What can go wrong, how to recover</li>
+              <li>• <strong>Implementation roadmap</strong> - Prioritized phases with dependencies</li>
+              <li>• <strong>Comparison tables</strong> - Why this approach over alternatives</li>
+            </ul>
+          </TipBox>
+        </div>
+
+        <div className="mt-6">
+          <TipBox variant="info">
+            The full plan is available at{" "}
+            <a
+              href="https://github.com/Dicklesworthstone/cass_memory_system/blob/main/PLAN_FOR_CASS_MEMORY_SYSTEM.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline"
+            >
+              github.com/Dicklesworthstone/cass_memory_system
+            </a>
+            . Study it as a template for your own project plans.
+          </TipBox>
+        </div>
       </Section>
 
       <Divider />
@@ -796,6 +996,105 @@ function StatCard({
     >
       <div className="text-2xl font-bold text-white">{value}</div>
       <div className="text-xs text-white/60">{label}</div>
+    </motion.div>
+  );
+}
+
+// =============================================================================
+// PLAN SECTION CARD - Shows a section from the plan document
+// =============================================================================
+function PlanSectionCard({
+  number,
+  title,
+  description,
+  icon,
+}: {
+  number: number;
+  title: string;
+  description: string;
+  icon: ReactNode;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: number * 0.03 }}
+      whileHover={{ y: -2, scale: 1.02 }}
+      className="group relative rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-xl transition-all duration-300 hover:border-violet-500/30 hover:bg-violet-500/5"
+    >
+      <div className="flex items-center gap-3 mb-2">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-500/20 text-violet-400 text-xs font-bold group-hover:bg-violet-500/30 transition-colors">
+          {number}
+        </div>
+        <div className="text-violet-400 group-hover:scale-110 transition-transform">
+          {icon}
+        </div>
+      </div>
+      <h5 className="font-semibold text-white text-sm mb-1 group-hover:text-violet-300 transition-colors">
+        {title}
+      </h5>
+      <p className="text-xs text-white/50 group-hover:text-white/70 transition-colors">
+        {description}
+      </p>
+    </motion.div>
+  );
+}
+
+// =============================================================================
+// PLAN PATTERN CARD - Shows a pattern that makes plans effective
+// =============================================================================
+function PlanPatternCard({
+  title,
+  description,
+  gradient,
+}: {
+  title: string;
+  description: string;
+  gradient: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      whileHover={{ x: 4, scale: 1.01 }}
+      className={`group relative rounded-xl border border-white/[0.08] bg-gradient-to-br ${gradient} p-5 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.15]`}
+    >
+      <h5 className="font-semibold text-white mb-2 group-hover:text-white/90 transition-colors">
+        {title}
+      </h5>
+      <p className="text-sm text-white/60 group-hover:text-white/80 transition-colors">
+        {description}
+      </p>
+    </motion.div>
+  );
+}
+
+// =============================================================================
+// INNOVATION CARD - Shows distinctive innovations from the plan
+// =============================================================================
+function InnovationCard({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ y: -2, scale: 1.02 }}
+      className="group relative rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5 backdrop-blur-xl transition-all duration-300 hover:border-emerald-500/40 hover:bg-emerald-500/10"
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <Lightbulb className="h-4 w-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+        <h5 className="font-semibold text-white group-hover:text-emerald-300 transition-colors">
+          {title}
+        </h5>
+      </div>
+      <p className="text-sm text-white/60 group-hover:text-white/80 transition-colors">
+        {description}
+      </p>
     </motion.div>
   );
 }
