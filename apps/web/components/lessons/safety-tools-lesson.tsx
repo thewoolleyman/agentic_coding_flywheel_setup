@@ -129,24 +129,24 @@ export function SafetyToolsLesson() {
         <CommandList
           commands={[
             {
-              command: "slb status",
-              description: "Check current SLB state",
+              command: "slb pending",
+              description: "Show pending requests",
             },
             {
-              command: 'slb request "rm -rf /tmp/build"',
-              description: "Request approval for a command",
+              command: 'slb run "rm -rf /tmp" --reason "Clean build"',
+              description: "Request approval and execute when approved",
             },
             {
-              command: "slb approve <request-id>",
+              command: "slb approve <id> --session-id <sid>",
               description: "Approve a pending request",
             },
             {
-              command: "slb reject <request-id>",
+              command: 'slb reject <id> --session-id <sid> --reason "..."',
               description: "Reject a pending request",
             },
             {
-              command: "slb list",
-              description: "Show pending requests",
+              command: "slb status <request-id>",
+              description: "Check status of a specific request",
             },
           ]}
         />
@@ -161,31 +161,31 @@ export function SafetyToolsLesson() {
         delay={0.3}
       >
         <Paragraph>
-          <Highlight>CAAM</Highlight> manages authentication for your AI
-          agents. Switch between API keys, rotate credentials, and ensure
-          agents use the right accounts.
+          <Highlight>CAAM</Highlight> enables sub-100ms account switching for
+          subscription-based AI services (Claude Max, Codex CLI, Gemini Ultra).
+          Swap OAuth tokens instantly without re-authenticating.
         </Paragraph>
 
         <div className="mt-6 space-y-4">
           <CaamFeature
             icon={<Key className="h-5 w-5" />}
-            title="Key Management"
-            description="Store and rotate API keys securely"
+            title="Token Management"
+            description="Backup and restore OAuth tokens for each tool"
           />
           <CaamFeature
             icon={<RefreshCw className="h-5 w-5" />}
-            title="Account Switching"
-            description="Switch between accounts without reconfiguration"
+            title="Instant Switching"
+            description="Switch accounts in under 100ms via symlink swap"
           />
           <CaamFeature
             icon={<Eye className="h-5 w-5" />}
-            title="Usage Tracking"
-            description="Monitor which account is being used"
+            title="Multi-Tool Support"
+            description="Works with Claude, Codex, and Gemini CLIs"
           />
           <CaamFeature
             icon={<Lock className="h-5 w-5" />}
-            title="Secure Storage"
-            description="Credentials stored encrypted on disk"
+            title="Profile Backup"
+            description="Save profiles by email for easy restoration"
           />
         </div>
       </Section>
@@ -199,19 +199,19 @@ export function SafetyToolsLesson() {
         <div className="space-y-4">
           <UseCase
             scenario="Personal vs Work"
-            description="Switch between personal and work API keys"
+            description="Switch between personal and work subscriptions"
           />
           <UseCase
             scenario="Rate Limits"
-            description="Rotate to a fresh account when hitting limits"
+            description="Rotate to a fresh account when hitting usage caps"
           />
           <UseCase
             scenario="Cost Separation"
-            description="Use different accounts for different projects"
+            description="Use different subscriptions for different projects"
           />
           <UseCase
-            scenario="Team Sharing"
-            description="Share access without sharing raw credentials"
+            scenario="Multi-Account"
+            description="Manage multiple Claude Max / Codex accounts"
           />
         </div>
       </Section>
@@ -225,24 +225,24 @@ export function SafetyToolsLesson() {
         <CommandList
           commands={[
             {
-              command: "caam list",
-              description: "Show configured accounts",
+              command: "caam ls [tool]",
+              description: "List saved profiles (claude, codex, gemini)",
             },
             {
-              command: "caam add <name>",
-              description: "Add a new account",
+              command: "caam backup <tool> <email>",
+              description: "Save current auth as a named profile",
             },
             {
-              command: "caam switch <name>",
-              description: "Switch to an account",
+              command: "caam switch <tool> <email>",
+              description: "Activate a saved profile",
             },
             {
-              command: "caam current",
-              description: "Show current account",
+              command: "caam status [tool]",
+              description: "Show currently active profile",
             },
             {
-              command: "caam remove <name>",
-              description: "Remove an account",
+              command: "caam delete <tool> <email>",
+              description: "Remove a saved profile",
             },
           ]}
         />
@@ -266,15 +266,15 @@ export function SafetyToolsLesson() {
 $ claude "delete all test files"
 > SLB: This command requires approval
 > Waiting for second approval...
-> Run 'slb approve req-123' from another session
+> Run 'slb approve req-123 --session-id <sid>' from another session
 
-# Example: Switch accounts for a project
-$ caam switch work-account
-> Switched to 'work-account'
-> Claude Code will now use work API key
+# Example: Switch Claude accounts for a project
+$ caam switch claude work@company.com
+> Activated profile 'work@company.com' for claude
+> Symlink updated in 47ms
 
 $ claude "continue the project"
-> Using account: work-account`}
+> Using profile: work@company.com`}
             language="bash"
           />
         </div>
@@ -310,10 +310,10 @@ $ claude "continue the project"
               CAAM Best Practices
             </h4>
             <div className="space-y-3">
-              <BestPractice text="Use descriptive account names" />
-              <BestPractice text="Rotate keys periodically" />
-              <BestPractice text="Verify current account before work" />
-              <BestPractice text="Remove unused accounts promptly" />
+              <BestPractice text="Backup profiles before switching" />
+              <BestPractice text="Use email as profile identifier" />
+              <BestPractice text="Verify active profile with caam status" />
+              <BestPractice text="Delete old profiles when no longer needed" />
             </div>
           </div>
         </div>
@@ -331,20 +331,20 @@ $ claude "continue the project"
           <QuickRefCard
             title="SLB"
             commands={[
-              "slb status",
-              "slb request <cmd>",
-              "slb approve <id>",
-              "slb list",
+              "slb pending",
+              "slb run <cmd> --reason ...",
+              "slb approve <id> --session-id ...",
+              "slb status <id>",
             ]}
             color="from-red-500/20 to-rose-500/20"
           />
           <QuickRefCard
             title="CAAM"
             commands={[
-              "caam list",
-              "caam add <name>",
-              "caam switch <name>",
-              "caam current",
+              "caam ls [tool]",
+              "caam backup <tool> <email>",
+              "caam switch <tool> <email>",
+              "caam status [tool]",
             ]}
             color="from-primary/20 to-violet-500/20"
           />
