@@ -1277,7 +1277,7 @@ install_asset() {
             log_error "install_asset: Failed to copy from bootstrap: $rel_path"
             return 1
         fi
-    elif [[ -f "$SCRIPT_DIR/$rel_path" ]]; then
+    elif [[ -n "${SCRIPT_DIR:-}" ]] && [[ -f "$SCRIPT_DIR/$rel_path" ]]; then
         if ! cp "$SCRIPT_DIR/$rel_path" "$dest_path"; then
             log_error "install_asset: Failed to copy from script dir: $rel_path"
             return 1
@@ -1428,8 +1428,17 @@ acfs_load_upstream_checksums() {
     fi
 
     local content=""
-    if [[ -r "$SCRIPT_DIR/checksums.yaml" ]]; then
-        content="$(cat "$SCRIPT_DIR/checksums.yaml")"
+    local checksums_file=""
+    if [[ -n "${ACFS_CHECKSUMS_YAML:-}" ]] && [[ -r "$ACFS_CHECKSUMS_YAML" ]]; then
+        checksums_file="$ACFS_CHECKSUMS_YAML"
+    elif [[ -n "${SCRIPT_DIR:-}" ]] && [[ -r "$SCRIPT_DIR/checksums.yaml" ]]; then
+        checksums_file="$SCRIPT_DIR/checksums.yaml"
+    elif [[ -n "${ACFS_BOOTSTRAP_DIR:-}" ]] && [[ -r "$ACFS_BOOTSTRAP_DIR/checksums.yaml" ]]; then
+        checksums_file="$ACFS_BOOTSTRAP_DIR/checksums.yaml"
+    fi
+
+    if [[ -n "$checksums_file" ]]; then
+        content="$(cat "$checksums_file")"
     else
         content="$(acfs_fetch_url_content "$ACFS_RAW/checksums.yaml")" || {
             log_error "Failed to fetch checksums.yaml from $ACFS_RAW"

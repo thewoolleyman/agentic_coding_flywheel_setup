@@ -563,6 +563,61 @@ _run_shell_with_strict_mode() {
     bash -c "$env_setup; set -euo pipefail; (printf '%s\n' 'set -euo pipefail'; cat) | bash -s"
 }
 
+# Provide a default run_as_target implementation for generated scripts (and other callers)
+# when the orchestrator (install.sh) isn't in scope.
+#
+# IMPORTANT:
+# - Avoid `sudo -i` / login shells (they source profile files, which are not a stable API).
+# - Preserve stdin for heredocs/pipes.
+if ! declare -f run_as_target >/dev/null 2>&1; then
+    run_as_target() {
+        local user="${TARGET_USER:-ubuntu}"
+        local user_home="${TARGET_HOME:-/home/$user}"
+
+        # UV_NO_CONFIG prevents uv from looking for config in /root when running via sudo/runuser.
+        # HOME is set explicitly for consistent tool installs and path resolution.
+        local -a env_args=("UV_NO_CONFIG=1" "HOME=$user_home")
+
+        # Pass ACFS context variables to the target user environment when available.
+        [[ -n "${ACFS_BOOTSTRAP_DIR:-}" ]] && env_args+=("ACFS_BOOTSTRAP_DIR=$ACFS_BOOTSTRAP_DIR")
+        [[ -n "${SCRIPT_DIR:-}" ]] && env_args+=("SCRIPT_DIR=$SCRIPT_DIR")
+        [[ -n "${ACFS_RAW:-}" ]] && env_args+=("ACFS_RAW=$ACFS_RAW")
+        [[ -n "${ACFS_VERSION:-}" ]] && env_args+=("ACFS_VERSION=$ACFS_VERSION")
+
+        # Already the target user
+        if [[ "$(whoami)" == "$user" ]]; then
+            cd "$user_home" 2>/dev/null || true
+            env "${env_args[@]}" "$@"
+            return $?
+        fi
+
+        # Prefer sudo (non-login) when available.
+        if command_exists sudo; then
+            # shellcheck disable=SC2016  # $HOME/$@ expand inside sh -c
+            sudo -u "$user" env "${env_args[@]}" sh -c 'cd "$HOME" 2>/dev/null; exec "$@"' _ "$@"
+            return $?
+        fi
+
+        # Root-only fallbacks.
+        if command_exists runuser; then
+            # shellcheck disable=SC2016  # $HOME/$@ expand inside sh -c
+            runuser -u "$user" -- env "${env_args[@]}" sh -c 'cd "$HOME" 2>/dev/null; exec "$@"' _ "$@"
+            return $?
+        fi
+
+        # su without login (-) to avoid sourcing profile files.
+        local env_assignments=""
+        local kv=""
+        for kv in "${env_args[@]}"; do
+            env_assignments+=" $(printf '%q' "$kv")"
+        done
+        env_assignments="${env_assignments# }"
+        local user_home_q
+        user_home_q="$(printf '%q' "$user_home")"
+        su "$user" -c "cd $user_home_q 2>/dev/null; env $env_assignments $(printf '%q ' "$@")"
+    }
+fi
+
 # Run a shell string (or stdin) as TARGET_USER
 run_as_target_shell() {
     local cmd="${1:-}"
