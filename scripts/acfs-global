@@ -115,7 +115,7 @@ main() {
         echo "Expected at: $target_home/.local/bin/acfs (or $target_home/.acfs/bin/acfs)" >&2
         echo "" >&2
         echo "Try running as the target user:" >&2
-        echo "  su - $target_user -c 'acfs $*'" >&2
+        echo "  su $target_user -c 'acfs $*'" >&2
         exit 1
     fi
 
