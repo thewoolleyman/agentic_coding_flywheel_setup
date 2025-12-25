@@ -1137,8 +1137,9 @@ check_gemini_auth() {
         found_auth=true
     fi
 
-    # Check for Gemini config directory
-    if [[ -d "$HOME/.config/gemini" ]]; then
+    # Some versions may store auth tokens in other files; only treat the config
+    # directory as evidence of auth if it exists and is non-empty.
+    if [[ -d "$HOME/.config/gemini" ]] && [[ -n "$(ls -A "$HOME/.config/gemini" 2>/dev/null)" ]]; then
         found_auth=true
     fi
 
