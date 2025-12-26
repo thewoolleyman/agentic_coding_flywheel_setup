@@ -1025,6 +1025,23 @@ upgrade_setup_infrastructure() {
         cp "$state_file" "$dest_state_file"
     fi
 
+    # For normal upgrades, the continuation script should skip Ubuntu upgrade (we just finished it).
+    # For the pre-upgrade reboot stage (kernel updates pending), we must continue WITH the Ubuntu upgrade.
+    local append_skip_upgrade="true"
+    if [[ -f "$dest_state_file" ]]; then
+        local stage=""
+        if command -v jq &>/dev/null; then
+            stage="$(jq -r '.ubuntu_upgrade.current_stage // empty' "$dest_state_file" 2>/dev/null || true)"
+        else
+            # Fallback: best-effort parse (the state file is written by jq and is pretty-printed).
+            stage="$(sed -n 's/.*"current_stage"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$dest_state_file" 2>/dev/null | head -n 1)"
+        fi
+
+        if [[ "$stage" == "pre_upgrade_reboot" ]]; then
+            append_skip_upgrade="false"
+        fi
+    fi
+
     # Create continue_install.sh script
     # This runs after all upgrades complete to resume ACFS installation
     log_detail "Creating continuation script..."
@@ -1038,7 +1055,10 @@ upgrade_setup_infrastructure() {
     install_url="https://raw.githubusercontent.com/${repo_owner}/${repo_name}/${repo_ref}/install.sh"
     install_url_q=$(printf '%q' "$install_url")
 
-    local -a continue_args=("${install_args[@]}" "--skip-ubuntu-upgrade")
+    local -a continue_args=("${install_args[@]}")
+    if [[ "$append_skip_upgrade" == "true" ]]; then
+        continue_args+=("--skip-ubuntu-upgrade")
+    fi
     local rendered_args=""
     local arg=""
     for arg in "${continue_args[@]}"; do

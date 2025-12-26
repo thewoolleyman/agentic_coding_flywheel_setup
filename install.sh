@@ -345,6 +345,7 @@ fetch_commit_sha() {
 
         if [[ -n "$sha" && ${#sha} -ge 7 ]]; then
             ACFS_COMMIT_SHA="${sha:0:12}"
+            # shellcheck disable=SC2034  # Used by scripts/lib/ubuntu_upgrade.sh to pin resume scripts to a specific commit.
             [[ ${#sha} -ge 40 ]] && ACFS_COMMIT_SHA_FULL="$sha"
         fi
 
@@ -1956,69 +1957,9 @@ run_ubuntu_upgrade_phase() {
                     return 1
                 fi
 
-                # IMPORTANT: For pre_upgrade_reboot, we need to continue WITH Ubuntu upgrade
-                # The default continue script has --skip-ubuntu-upgrade, so override it
-                local continue_script="${ACFS_RESUME_DIR:-/var/lib/acfs}/continue_install.sh"
-                if [[ -f "$continue_script" ]]; then
-                    # Build args without --skip-ubuntu-upgrade
-                    local repo_owner repo_name repo_ref install_url
-                    repo_owner="${ACFS_REPO_OWNER:-Dicklesworthstone}"
-                    repo_name="${ACFS_REPO_NAME:-agentic_coding_flywheel_setup}"
-                    repo_ref="${ACFS_COMMIT_SHA_FULL:-${ACFS_REF:-main}}"
-                    install_url="https://raw.githubusercontent.com/${repo_owner}/${repo_name}/${repo_ref}/install.sh"
-
-                    # Preserve the original installer argv so the post-reboot run
-                    # behaves exactly like the initial invocation (e.g. --skip-* flags,
-                    # --target-ubuntu, --strict, selection flags, etc.).
-                    local -a continue_args=("$@")
-
-                    # Ensure this pre-upgrade reboot path continues WITH the Ubuntu upgrade.
-                    # The resume infrastructure script typically appends --skip-ubuntu-upgrade,
-                    # but for this stage we must not include it.
-                    local -a filtered_args=()
-                    local raw_arg=""
-                    for raw_arg in "${continue_args[@]}"; do
-                        [[ "$raw_arg" == "--skip-ubuntu-upgrade" ]] && continue
-                        filtered_args+=("$raw_arg")
-                    done
-                    continue_args=("${filtered_args[@]}")
-
-                    # Shell-escape values we embed into the generated script.
-                    local repo_ref_q
-                    repo_ref_q=$(printf '%q' "$repo_ref")
-                    local install_url_q
-                    install_url_q=$(printf '%q' "$install_url")
-                    local continue_args_q=""
-                    local arg=""
-                    for arg in "${continue_args[@]}"; do
-                        continue_args_q+=" $(printf '%q' "$arg")"
-                    done
-                    continue_args_q="${continue_args_q# }"
-
-                    cat > "$continue_script" << CONTINUE_SCRIPT
-#!/usr/bin/env bash
-# Continue ACFS installation after pre-upgrade reboot (kernel updates applied)
-set -euo pipefail
-
-echo "Pre-upgrade reboot complete. Continuing with ACFS installation..."
-
-# Fetch and run installer (will proceed with Ubuntu upgrade if needed)
-export ACFS_REF=${repo_ref_q}
-INSTALL_URL=${install_url_q}
-INSTALL_ARGS=(${continue_args_q})
-
-echo "Fetching installer: \${INSTALL_URL}"
-CURL_ARGS=(-fsSL)
-if curl --help all 2>/dev/null | grep -q -- '--proto'; then
-    CURL_ARGS=(--proto '=https' --proto-redir '=https' -fsSL)
-fi
-
-curl "\${CURL_ARGS[@]}" "\${INSTALL_URL}" | bash -s -- "\${INSTALL_ARGS[@]}"
-
-echo "ACFS installation complete!"
-CONTINUE_SCRIPT
-                    chmod +x "$continue_script"
-                fi
+                # upgrade_setup_infrastructure generates the correct continue_install.sh for both:
+                # - pre-upgrade reboot (continue WITH upgrade)
+                # - post-upgrade continuation (skip upgrade)
             else
                 log_warn "Resume infrastructure not available. After reboot, re-run installer manually."
             fi

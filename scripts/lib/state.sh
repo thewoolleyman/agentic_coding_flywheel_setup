@@ -532,9 +532,25 @@ state_phase_fail() {
 state_phase_skip() {
     local phase_id="$1"
 
-    if command -v jq &>/dev/null; then
-        state_update ".skipped_phases = ((.skipped_phases // []) + [\"$phase_id\"] | unique)"
+    if ! command -v jq &>/dev/null; then
+        return 1
     fi
+
+    local state
+    state=$(state_load) || return 1
+
+    local new_state
+    if ! new_state=$(echo "$state" | jq --arg phase "$phase_id" '
+        # Preserve insertion order while preventing duplicates.
+        .skipped_phases = (
+          (.skipped_phases // []) as $phases |
+          if ($phases | index($phase)) == null then $phases + [$phase] else $phases end
+        )
+    '); then
+        return 1
+    fi
+
+    state_save "$new_state"
 }
 
 # Mark a tool as skipped
@@ -542,9 +558,25 @@ state_phase_skip() {
 state_tool_skip() {
     local tool="$1"
 
-    if command -v jq &>/dev/null; then
-        state_update ".skipped_tools = ((.skipped_tools // []) + [\"$tool\"] | unique)"
+    if ! command -v jq &>/dev/null; then
+        return 1
     fi
+
+    local state
+    state=$(state_load) || return 1
+
+    local new_state
+    if ! new_state=$(echo "$state" | jq --arg tool "$tool" '
+        # Preserve insertion order while preventing duplicates.
+        .skipped_tools = (
+          (.skipped_tools // []) as $tools |
+          if ($tools | index($tool)) == null then $tools + [$tool] else $tools end
+        )
+    '); then
+        return 1
+    fi
+
+    state_save "$new_state"
 }
 
 # ============================================================
