@@ -48,7 +48,11 @@ export function useWizardAnalytics({
     });
 
     // Track funnel step entry (comprehensive funnel tracking)
-    trackFunnelStepEnter(stepNumber, step, stepTitle);
+    // Only track steps that are part of the core wizard funnel (1..TOTAL_STEPS).
+    // Optional/bonus pages (e.g. Windows Terminal setup) should not mutate funnel state.
+    if (stepNumber >= 1 && stepNumber <= totalSteps) {
+      trackFunnelStepEnter(stepNumber, step, stepTitle);
+    }
 
     // Track wizard start conversion on first step
     if (stepNumber === 1) {
@@ -72,23 +76,29 @@ export function useWizardAnalytics({
     trackWizardStepComplete(step, stepNumber, timeSpent);
 
     // Track funnel step completion
-    trackFunnelStepComplete(stepNumber, step, {
-      step_title: stepTitle,
-      ...additionalData,
-    });
-  }, [step, stepNumber, stepTitle, getTimeSpent]);
+    if (stepNumber >= 1 && stepNumber <= totalSteps) {
+      trackFunnelStepComplete(stepNumber, step, {
+        step_title: stepTitle,
+        ...additionalData,
+      });
+    }
+  }, [step, stepNumber, stepTitle, totalSteps, getTimeSpent]);
 
   // Track abandonment
   const markAbandoned = useCallback((reason?: string) => {
     trackWizardAbandonment(step, stepNumber, reason);
-    trackFunnelDropoff(reason);
-  }, [step, stepNumber]);
+    if (stepNumber >= 1 && stepNumber <= totalSteps) {
+      trackFunnelDropoff(reason);
+    }
+  }, [step, stepNumber, totalSteps]);
 
   // Track potential abandonment on unmount
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (!isCompleted.current) {
-        trackFunnelDropoff('page_exit');
+        if (stepNumber >= 1 && stepNumber <= totalSteps) {
+          trackFunnelDropoff('page_exit');
+        }
       }
     };
 
@@ -97,7 +107,7 @@ export function useWizardAnalytics({
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [stepNumber, totalSteps]);
 
   return {
     getTimeSpent,
