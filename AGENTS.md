@@ -41,6 +41,7 @@ If that audit trail is missing, then you must act as if the operation never happ
 - ❌ Never use `npm`, `yarn`, or `pnpm`.
 - Lockfiles: only `bun.lock`. Do not introduce any other lockfile.
 - Target **latest Node.js**. No need to support old Node versions.
+- **Note:** `bun install -g <pkg>` is valid syntax (alias for `bun add -g`). Do not "fix" it.
 
 ---
 
