@@ -170,7 +170,7 @@ const COMMANDS: CommandEntry[] = [
     name: "bv",
     fullName: "Beads Viewer",
     description: "Analyze the task DAG and pick work (robot protocol)",
-    example: "bv -robot-triage -recipe high-impact",
+    example: "bv --robot-triage --recipe high-impact",
     category: "stack",
     learnMoreHref: "/learn/tools/beads",
   },
