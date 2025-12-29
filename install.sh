@@ -1037,16 +1037,21 @@ run_preflight_checks() {
     elif [[ -f "./scripts/preflight.sh" ]]; then
         preflight_script="./scripts/preflight.sh"
     else
-        # Download preflight script for curl | bash scenario
-        log_detail "Downloading preflight script..."
-        if command -v mktemp &>/dev/null; then
-            preflight_tmp="$(mktemp "${TMPDIR:-/tmp}/acfs-preflight.XXXXXX" 2>/dev/null)" || preflight_tmp=""
-        fi
-        if [[ -n "$preflight_tmp" ]] && acfs_curl "$ACFS_RAW/scripts/preflight.sh" -o "$preflight_tmp" 2>/dev/null; then
-            chmod +x "$preflight_tmp"
-            preflight_script="$preflight_tmp"
+        # Download preflight script for curl | bash scenario (if curl available)
+        if command -v curl &>/dev/null; then
+            log_detail "Downloading preflight script..."
+            if command -v mktemp &>/dev/null; then
+                preflight_tmp="$(mktemp "${TMPDIR:-/tmp}/acfs-preflight.XXXXXX" 2>/dev/null)" || preflight_tmp=""
+            fi
+            if [[ -n "$preflight_tmp" ]] && acfs_curl "$ACFS_RAW/scripts/preflight.sh" -o "$preflight_tmp" 2>/dev/null; then
+                chmod +x "$preflight_tmp"
+                preflight_script="$preflight_tmp"
+            else
+                log_warn "Could not download preflight script - skipping checks"
+                return 0
+            fi
         else
-            log_warn "Could not download preflight script - skipping checks"
+            log_warn "curl not available - skipping preflight checks"
             return 0
         fi
     fi
@@ -1971,6 +1976,9 @@ run_ubuntu_upgrade_phase() {
             else
                 log_warn "Resume infrastructure not available. After reboot, re-run installer manually."
             fi
+
+            # Update MOTD before reboot
+            upgrade_update_motd "Rebooting for upgrade to ${UBUNTU_TARGET_VERSION:-Ubuntu}..."
 
             # Trigger reboot
             log_warn "Rebooting in 10 seconds..."
@@ -3080,6 +3088,52 @@ install_cloud_db_legacy_cloud() {
     fi
 }
 
+install_cloud_db_legacy() {
+    # Cloud CLIs (bun global installs)
+    if [[ "$SKIP_CLOUD" == "true" ]]; then
+        log_detail "Skipping cloud CLIs (--skip-cloud)"
+    else
+        local bun_bin="$TARGET_HOME/.bun/bin/bun"
+        if [[ ! -x "$bun_bin" ]]; then
+            log_warn "Cloud CLIs: bun not found at $bun_bin (skipping)"
+        else
+            local cli
+            for cli in wrangler supabase vercel; do
+                if [[ "$cli" == "supabase" ]]; then
+                    if [[ -x "$TARGET_HOME/.local/bin/supabase" ]] || [[ -x "$TARGET_HOME/.bun/bin/supabase" ]]; then
+                        log_detail "supabase already installed"
+                        continue
+                    fi
+
+                    log_detail "Installing supabase (direct binary)"
+                    if try_step "Installing supabase" install_supabase_cli_release; then
+                        log_success "supabase installed"
+                    else
+                        log_warn "supabase installation failed (optional)"
+                    fi
+                    continue
+                fi
+
+                if [[ -x "$TARGET_HOME/.bun/bin/$cli" ]]; then
+                    log_detail "$cli already installed"
+                    continue
+                fi
+
+                log_detail "Installing $cli via bun"
+                if try_step "Installing $cli via bun" run_as_target "$bun_bin" install -g --trust "${cli}@latest"; then
+                    if [[ -x "$TARGET_HOME/.bun/bin/$cli" ]]; then
+                        log_success "$cli installed"
+                    else
+                        log_warn "$cli: install finished but binary not found"
+                    fi
+                else
+                    log_warn "$cli installation failed (optional)"
+                fi
+            done
+        fi
+    fi
+}
+
 install_cloud_db() {
     set_phase "cloud_db" "Cloud & Database Tools"
     log_step "7/9" "Installing cloud & database tools..."
@@ -3191,9 +3245,7 @@ install_stack_phase() {
                 local tmp_install
                 tmp_install="$(mktemp "${TMPDIR:-/tmp}/acfs-install-${tool}.XXXXXX" 2>/dev/null)" || tmp_install=""
 
-                if [[ -z "$tmp_install" ]]; then
-                    log_warn "MCP Agent Mail: failed to create temp installer file"
-                elif verify_checksum "$url" "$expected_sha256" "$tool" > "$tmp_install"; then
+                if [[ -n "$tmp_install" ]] && verify_checksum "$url" "$expected_sha256" "$tool" > "$tmp_install"; then
                     chmod 755 "$tmp_install" 2>/dev/null || true
 
                     # Kill existing session if any (clean slate)
@@ -3312,7 +3364,7 @@ finalize() {
     done
 
     log_detail "Installing onboard command"
-    try_step "Installing onboard script" install_asset "packages/onboard/onboard.sh" "$ACFS_HOME/onboard/onboard.sh" || return 1
+    try_step "Installing onboard script" install_asset "scripts/onboard/onboard.sh" "$ACFS_HOME/onboard/onboard.sh" || return 1
     try_step "Setting onboard permissions" $SUDO chmod 755 "$ACFS_HOME/onboard/onboard.sh" || return 1
     try_step "Setting onboard ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/onboard" || return 1
 
@@ -3869,8 +3921,6 @@ main() {
         echo "  - Bun: https://bun.sh"
         echo "  - Rust: https://rustup.rs"
         echo "  - uv: https://astral.sh/uv"
-        echo "  - Atuin: https://atuin.sh"
-        echo "  - Zoxide: https://github.com/ajeetdsouza/zoxide"
         echo "  - Claude Code (native): https://claude.ai/install.sh"
         echo "  - NTM: https://github.com/Dicklesworthstone/ntm"
         echo "  - MCP Agent Mail: https://github.com/Dicklesworthstone/mcp_agent_mail"

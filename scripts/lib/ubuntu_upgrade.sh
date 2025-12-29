@@ -1535,6 +1535,21 @@ ubuntu_fix_dpkg() {
 ubuntu_recover_failed_upgrade() {
     log_warn "Attempting to recover from failed upgrade..."
 
+    # Restore ubuntu.sources if the DEB822 workaround left it disabled
+    local sources_file="/etc/apt/sources.list.d/ubuntu.sources"
+    local disabled_file="${sources_file}.disabled"
+    if [[ -f "$disabled_file" ]]; then
+        log_warn "Restoring ubuntu.sources from backup..."
+        if mv "$disabled_file" "$sources_file"; then
+            log_success "Restored ubuntu.sources"
+        else
+            log_error "Failed to restore ubuntu.sources"
+        fi
+        # Remove the temp legacy file if it exists
+        rm -f "/etc/apt/sources.list.d/ubuntu-acfs-temp.list"
+        apt-get update -qq 2>/dev/null || true
+    fi
+
     # Try fixing dpkg first
     ubuntu_fix_dpkg
 
