@@ -197,8 +197,9 @@ export function useVPSIP(): [string | null, (ip: string) => void, boolean] {
   }, []);
 
   const setIP = useCallback((newIP: string) => {
-    if (setVPSIP(newIP)) {
-      setVpsIPState({ ip: newIP, loaded: true });
+    const normalized = newIP.trim();
+    if (setVPSIP(normalized)) {
+      setVpsIPState({ ip: normalized, loaded: true });
     }
   }, []);
 

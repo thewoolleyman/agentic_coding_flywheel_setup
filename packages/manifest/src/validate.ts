@@ -196,6 +196,8 @@ const RESERVED_FUNCTION_NAMES = new Set([
   'install_cli',
   'install_db',
   'install_users',
+  'install_filesystem',
+  'install_network',
 
   // Doctor/manifest check functions
   'run_manifest_checks',

@@ -667,6 +667,36 @@ describe('validateReservedNames', () => {
     expect(errors[0].context.functionName).toBe('install_base');
   });
 
+  test('detects collision with other category entrypoints (network/filesystem)', () => {
+    const manifest = createManifest([
+      {
+        id: 'network',
+        description: 'Network category entrypoint collision',
+        install: ['echo "install"'],
+        verify: ['echo "verify"'],
+        run_as: 'target_user',
+        optional: false,
+        enabled_by_default: true,
+        generated: true,
+      },
+      {
+        id: 'filesystem',
+        description: 'Filesystem category entrypoint collision',
+        install: ['echo "install"'],
+        verify: ['echo "verify"'],
+        run_as: 'target_user',
+        optional: false,
+        enabled_by_default: true,
+        generated: true,
+      },
+    ]);
+
+    const errors = validateReservedNames(manifest);
+    expect(errors).toHaveLength(2);
+    const names = errors.map((e) => e.context.functionName).sort();
+    expect(names).toEqual(['install_filesystem', 'install_network']);
+  });
+
   test('allows modules with category prefix (e.g., base.system)', () => {
     // "base.system" generates "install_base_system" which is NOT reserved
     const manifest = createManifest([
