@@ -2215,6 +2215,16 @@ setup_filesystem() {
         return 0
     fi
 
+    # Basic hardening: refuse to follow symlinks as root.
+    # Prevents symlink tricks like /data -> / or /data/projects -> /etc.
+    local fs_path=""
+    for fs_path in /data /data/projects /data/cache; do
+        if [[ -e "$fs_path" && -L "$fs_path" ]]; then
+            log_error "Refusing to set up filesystem: $fs_path is a symlink"
+            return 1
+        fi
+    done
+
     # System directories
     local sys_dirs=("/data/projects" "/data/cache")
     for dir in "${sys_dirs[@]}"; do
@@ -2224,8 +2234,8 @@ setup_filesystem() {
         fi
     done
 
-    # Ensure /data is owned by target user
-    try_step "Setting /data ownership" acfs_chown_tree "$TARGET_USER:$TARGET_USER" /data || true
+    # Ensure workspace directories are owned by target user (avoid over-broad recursive chown).
+    try_step "Setting /data ownership" $SUDO chown -h "$TARGET_USER:$TARGET_USER" /data /data/projects /data/cache || true
 
     # CRITICAL: Fix home directory ownership FIRST, before any run_as_target calls
     # Some cloud images (e.g., Hetzner) have /home/ubuntu owned by root after user creation
