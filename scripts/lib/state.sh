@@ -143,6 +143,26 @@ state_init() {
     # Ensure directory exists
     if [[ ! -d "$state_dir" ]]; then
         mkdir -p "$state_dir" || return 1
+
+        # If running as root but targeting a non-root user, ensure the directory
+        # is owned by the target user so they can access the state file later.
+        # This is critical for `acfs doctor` to work after a failed install.
+        if [[ $EUID -eq 0 ]] && [[ -n "${TARGET_USER:-}" ]] && [[ "$TARGET_USER" != "root" ]]; then
+            local target_home="${TARGET_HOME:-/home/${TARGET_USER}}"
+            if [[ -n "$target_home" ]] && [[ "$target_home" != "/" ]] && [[ "$target_home" == /* ]] && [[ "$state_dir" == "$target_home/"* ]]; then
+                local target_group=""
+                if command -v id &>/dev/null; then
+                    target_group="$(id -gn "$TARGET_USER" 2>/dev/null || true)"
+                fi
+                if [[ -n "$target_group" ]]; then
+                    chown "$TARGET_USER:$target_group" "$state_dir" 2>/dev/null \
+                        || chown "$TARGET_USER:$TARGET_USER" "$state_dir" 2>/dev/null \
+                        || true
+                else
+                    chown "$TARGET_USER" "$state_dir" 2>/dev/null || true
+                fi
+            fi
+        fi
     fi
 
     local now
@@ -220,6 +240,25 @@ state_write_atomic() {
         if ! mkdir -p "$target_dir" 2>/dev/null; then
             declare -f log_error &>/dev/null && log_error "state_write_atomic: cannot create directory $target_dir"
             return 2
+        fi
+
+        # If running as root but targeting a non-root user, ensure the directory
+        # is owned by the target user so they can access the state file later.
+        if [[ $EUID -eq 0 ]] && [[ -n "${TARGET_USER:-}" ]] && [[ "$TARGET_USER" != "root" ]]; then
+            local target_home="${TARGET_HOME:-/home/${TARGET_USER}}"
+            if [[ -n "$target_home" ]] && [[ "$target_home" != "/" ]] && [[ "$target_home" == /* ]] && [[ "$target_dir" == "$target_home/"* ]]; then
+                local dir_target_group=""
+                if command -v id &>/dev/null; then
+                    dir_target_group="$(id -gn "$TARGET_USER" 2>/dev/null || true)"
+                fi
+                if [[ -n "$dir_target_group" ]]; then
+                    chown "$TARGET_USER:$dir_target_group" "$target_dir" 2>/dev/null \
+                        || chown "$TARGET_USER:$TARGET_USER" "$target_dir" 2>/dev/null \
+                        || true
+                else
+                    chown "$TARGET_USER" "$target_dir" 2>/dev/null || true
+                fi
+            fi
         fi
     fi
 

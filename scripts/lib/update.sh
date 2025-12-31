@@ -580,7 +580,33 @@ update_agents() {
     fi
 
     # Claude Code - can update without bun; supports install/reinstall with --force.
-    if cmd_exists claude; then
+    #
+    # Check for bun-installed Claude and remove it if native install is requested.
+    # The native install goes to ~/.local/bin/claude which should take precedence,
+    # but having both can cause PATH confusion and doctor warnings.
+    local claude_path=""
+    claude_path=$(command -v claude 2>/dev/null) || true
+    local bun_claude_detected=false
+    if [[ -n "$claude_path" ]] && [[ "$claude_path" == *".bun"* || "$claude_path" == *"node_modules"* ]]; then
+        bun_claude_detected=true
+        if [[ "$FORCE_MODE" == "true" ]]; then
+            log_to_file "Removing bun-installed Claude to switch to native version: $claude_path"
+            local bun_bin="$HOME/.bun/bin/bun"
+            if [[ -x "$bun_bin" ]]; then
+                # Try to uninstall via bun
+                "$bun_bin" remove -g @anthropic-ai/claude-code 2>/dev/null || true
+                "$bun_bin" remove -g claude-code 2>/dev/null || true
+            fi
+            # Also remove the symlink/binary directly if it still exists
+            if [[ -f "$claude_path" || -L "$claude_path" ]]; then
+                rm -f "$claude_path" 2>/dev/null || true
+            fi
+            # Clear the cached path so we detect as "not installed" for fresh install
+            claude_path=""
+        fi
+    fi
+
+    if cmd_exists claude && [[ "$bun_claude_detected" != "true" || "$FORCE_MODE" != "true" ]]; then
         capture_version_before "claude"
 
         # Try native update first

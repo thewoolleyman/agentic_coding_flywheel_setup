@@ -2293,9 +2293,20 @@ setup_filesystem() {
     done
 
     # Create ACFS directories (as root, then chown)
-    try_step "Creating ACFS directories" $SUDO mkdir -p "$ACFS_HOME"/{zsh,tmux,bin,docs,logs} || return 1
+    try_step "Creating ACFS directories" $SUDO mkdir -p "$ACFS_HOME"/{zsh,tmux,bin,docs,logs,scripts/lib} || return 1
     try_step "Setting ACFS directory ownership" acfs_chown_tree "$TARGET_USER:$TARGET_USER" "$ACFS_HOME" || return 1
     try_step "Creating ACFS log directory" $SUDO mkdir -p "$ACFS_LOG_DIR" || return 1
+
+    # Install essential ACFS scripts early so `acfs doctor` works even after early failures.
+    # This is critical for debugging failed installs - users need `acfs doctor` to work
+    # even if the install failed in Phase 3 (languages) before finalization.
+    log_detail "Installing essential ACFS scripts for early debugging"
+    try_step "Installing logging.sh (early)" install_asset "scripts/lib/logging.sh" "$ACFS_HOME/scripts/lib/logging.sh" || true
+    try_step "Installing gum_ui.sh (early)" install_asset "scripts/lib/gum_ui.sh" "$ACFS_HOME/scripts/lib/gum_ui.sh" || true
+    try_step "Installing doctor.sh (early)" install_asset "scripts/lib/doctor.sh" "$ACFS_HOME/scripts/lib/doctor.sh" || true
+    # Set permissions and ownership so target user can run doctor
+    $SUDO chmod 755 "$ACFS_HOME/scripts/lib/"*.sh 2>/dev/null || true
+    acfs_chown_tree "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/scripts" 2>/dev/null || true
 
     # Create user's .local/bin and .bun directories early - many installers need them
     # This prevents NTM, UBS, CASS, Bun, etc. from creating them as root via sudo

@@ -788,7 +788,7 @@ check_agent_path_conflicts() {
             # Package manager version - warn about potential conflicts
             check "agent.path.claude" "Claude Code path" "warn" \
                 "using bun/npm version ($claude_path)" \
-                "Install the native Claude Code build: acfs update --force --agents-only"
+                "Switch to native: acfs update --force --agents-only (removes bun version, installs native)"
         fi
     else
         # Some other path - just note it
@@ -889,11 +889,45 @@ check_cloud() {
 check_stack() {
     section "Dicklesworthstone stack"
 
+    # Detect ARM64 for custom guidance
+    local is_arm64=false
+    local arch=""
+    arch="$(uname -m 2>/dev/null)" || true
+    [[ "$arch" == "aarch64" || "$arch" == "arm64" ]] && is_arm64=true
+
     check_command "stack.ntm" "NTM" "ntm"
     check_command "stack.slb" "SLB" "slb"
-    check_command "stack.ubs" "UBS" "ubs"
+
+    # UBS - custom check with ARM64 guidance
+    if command -v ubs &>/dev/null; then
+        local version
+        version=$(get_version_line "ubs")
+        check "stack.ubs" "UBS ($version)" "pass" "installed"
+    else
+        if [[ "$is_arm64" == "true" ]]; then
+            check "stack.ubs" "UBS" "fail" "not found (ARM64: may require source build)" \
+                "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/master/install.sh | bash"
+        else
+            check "stack.ubs" "UBS" "fail" "not found"
+        fi
+    fi
+
     check_command "stack.bv" "Beads Viewer" "bv"
-    check_command "stack.cass" "CASS" "cass"
+
+    # CASS - custom check with ARM64 guidance
+    if command -v cass &>/dev/null; then
+        local version
+        version=$(get_version_line "cass")
+        check "stack.cass" "CASS ($version)" "pass" "installed"
+    else
+        if [[ "$is_arm64" == "true" ]]; then
+            check "stack.cass" "CASS" "fail" "not found (ARM64: builds from source, requires nightly Rust)" \
+                "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_session_search/main/install.sh | bash -s -- --easy-mode"
+        else
+            check "stack.cass" "CASS" "fail" "not found"
+        fi
+    fi
+
     check_ntm_cass_compat
     check_command "stack.cm" "CASS Memory" "cm"
     check_command "stack.caam" "CAAM" "caam"
