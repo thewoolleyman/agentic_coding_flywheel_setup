@@ -2149,7 +2149,15 @@ normalize_user() {
     # Create target user if it doesn't exist
     if ! id "$TARGET_USER" &>/dev/null; then
         log_detail "Creating user: $TARGET_USER"
-        try_step "Creating user $TARGET_USER" $SUDO useradd -m -s /bin/bash "$TARGET_USER" || true
+        try_step "Creating user $TARGET_USER" $SUDO useradd -m -s /bin/bash "$TARGET_USER" || {
+            local useradd_exit=$?
+            if id "$TARGET_USER" &>/dev/null; then
+                log_warn "useradd exited ${useradd_exit}, but user '$TARGET_USER' exists; continuing"
+            else
+                log_error "Failed to create user '$TARGET_USER' (useradd exit ${useradd_exit}). Aborting."
+                return 1
+            fi
+        }
         try_step "Adding $TARGET_USER to sudo group" $SUDO usermod -aG sudo "$TARGET_USER" || return 1
     fi
 
