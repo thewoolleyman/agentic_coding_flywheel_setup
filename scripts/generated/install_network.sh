@@ -93,7 +93,86 @@ acfs_security_init() {
 }
 
 # Category: network
-# Modules: 1
+# Modules: 2
+
+# Enable SSH keepalive to prevent VPN/NAT connection drops
+install_network_ssh_keepalive() {
+    local module_id="network.ssh_keepalive"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing network.ssh_keepalive"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: install: # Enable SSH keepalive settings to prevent VPN/NAT disconnections (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_NETWORK_SSH_KEEPALIVE'
+# Enable SSH keepalive settings to prevent VPN/NAT disconnections
+# Back up original config
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.acfs 2>/dev/null || true
+
+# Enable ClientAliveInterval (send keepalive every 60 seconds)
+if grep -q '^#*ClientAliveInterval' /etc/ssh/sshd_config; then
+  sed -i 's/^#*ClientAliveInterval.*/ClientAliveInterval 60/' /etc/ssh/sshd_config
+else
+  echo 'ClientAliveInterval 60' >> /etc/ssh/sshd_config
+fi
+
+# Enable ClientAliveCountMax (disconnect after 3 missed keepalives = 3 min)
+if grep -q '^#*ClientAliveCountMax' /etc/ssh/sshd_config; then
+  sed -i 's/^#*ClientAliveCountMax.*/ClientAliveCountMax 3/' /etc/ssh/sshd_config
+else
+  echo 'ClientAliveCountMax 3' >> /etc/ssh/sshd_config
+fi
+
+# Reload sshd to apply changes (won't kill existing connections)
+systemctl reload sshd || systemctl reload ssh || true
+INSTALL_NETWORK_SSH_KEEPALIVE
+        then
+            log_warn "network.ssh_keepalive: install command failed: # Enable SSH keepalive settings to prevent VPN/NAT disconnections"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "network.ssh_keepalive" "install command failed: # Enable SSH keepalive settings to prevent VPN/NAT disconnections"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "network.ssh_keepalive"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: grep -q '^ClientAliveInterval 60' /etc/ssh/sshd_config (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_NETWORK_SSH_KEEPALIVE'
+grep -q '^ClientAliveInterval 60' /etc/ssh/sshd_config
+INSTALL_NETWORK_SSH_KEEPALIVE
+        then
+            log_warn "network.ssh_keepalive: verify failed: grep -q '^ClientAliveInterval 60' /etc/ssh/sshd_config"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "network.ssh_keepalive" "verify failed: grep -q '^ClientAliveInterval 60' /etc/ssh/sshd_config"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "network.ssh_keepalive"
+            fi
+            return 0
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: grep -q '^ClientAliveCountMax 3' /etc/ssh/sshd_config (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_NETWORK_SSH_KEEPALIVE'
+grep -q '^ClientAliveCountMax 3' /etc/ssh/sshd_config
+INSTALL_NETWORK_SSH_KEEPALIVE
+        then
+            log_warn "network.ssh_keepalive: verify failed: grep -q '^ClientAliveCountMax 3' /etc/ssh/sshd_config"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "network.ssh_keepalive" "verify failed: grep -q '^ClientAliveCountMax 3' /etc/ssh/sshd_config"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "network.ssh_keepalive"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "network.ssh_keepalive installed"
+}
 
 # Zero-config mesh VPN for secure remote VPS access
 install_network_tailscale() {
@@ -159,6 +238,7 @@ INSTALL_NETWORK_TAILSCALE
 # Install all network modules
 install_network() {
     log_section "Installing network modules"
+    install_network_ssh_keepalive
     install_network_tailscale
 }
 

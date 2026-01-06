@@ -6,11 +6,12 @@
 # ============================================================
 # Data-only manifest index. Safe to source.
 
-ACFS_MANIFEST_SHA256="817312c99cd140d93634cd649f53406b19a8544f366aeaa4f2f07250cde04c08"
+ACFS_MANIFEST_SHA256="24ca7624888ffd104ac1ba98581cb4a60f1d858799c02f31f79d925cb8a8e7c6"
 
 ACFS_MODULES_IN_ORDER=(
   "base.system"
   "users.ubuntu"
+  "network.ssh_keepalive"
   "base.filesystem"
   "shell.zsh"
   "shell.omz"
@@ -49,6 +50,7 @@ ACFS_MODULES_IN_ORDER=(
 declare -gA ACFS_MODULE_PHASE=(
   [base.system]="1"
   [users.ubuntu]="2"
+  [network.ssh_keepalive]="2"
   [base.filesystem]="3"
   [shell.zsh]="4"
   [shell.omz]="4"
@@ -87,6 +89,7 @@ declare -gA ACFS_MODULE_PHASE=(
 declare -gA ACFS_MODULE_DEPS=(
   [base.system]=""
   [users.ubuntu]=""
+  [network.ssh_keepalive]=""
   [base.filesystem]="users.ubuntu"
   [shell.zsh]="base.system,base.filesystem"
   [shell.omz]="shell.zsh"
@@ -125,6 +128,7 @@ declare -gA ACFS_MODULE_DEPS=(
 declare -gA ACFS_MODULE_FUNC=(
   [base.system]="install_base_system"
   [users.ubuntu]="install_users_ubuntu"
+  [network.ssh_keepalive]="install_network_ssh_keepalive"
   [base.filesystem]="install_base_filesystem"
   [shell.zsh]="install_shell_zsh"
   [shell.omz]="install_shell_omz"
@@ -163,6 +167,7 @@ declare -gA ACFS_MODULE_FUNC=(
 declare -gA ACFS_MODULE_CATEGORY=(
   [base.system]="base"
   [users.ubuntu]="users"
+  [network.ssh_keepalive]="network"
   [base.filesystem]="filesystem"
   [shell.zsh]="shell"
   [shell.omz]="shell"
@@ -201,6 +206,7 @@ declare -gA ACFS_MODULE_CATEGORY=(
 declare -gA ACFS_MODULE_TAGS=(
   [base.system]="critical"
   [users.ubuntu]="orchestration,critical"
+  [network.ssh_keepalive]="network,remote-dev"
   [base.filesystem]="critical"
   [shell.zsh]="critical,shell-ux"
   [shell.omz]="critical,shell-ux"
@@ -239,6 +245,7 @@ declare -gA ACFS_MODULE_TAGS=(
 declare -gA ACFS_MODULE_DEFAULT=(
   [base.system]="1"
   [users.ubuntu]="1"
+  [network.ssh_keepalive]="1"
   [base.filesystem]="1"
   [shell.zsh]="1"
   [shell.omz]="1"

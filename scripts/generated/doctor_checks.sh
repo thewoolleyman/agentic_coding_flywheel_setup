@@ -104,6 +104,8 @@ declare -a MANIFEST_CHECKS=(
     "base.system.4	Base packages + sane defaults	gpg --version	required"
     "users.ubuntu.1	Ensure ubuntu user + passwordless sudo + ssh keys	id ubuntu	required"
     "users.ubuntu.2	Ensure ubuntu user + passwordless sudo + ssh keys	sudo -n true	required"
+    "network.ssh_keepalive.1	Enable SSH keepalive to prevent VPN/NAT connection drops	grep -q '^ClientAliveInterval 60' /etc/ssh/sshd_config	required"
+    "network.ssh_keepalive.2	Enable SSH keepalive to prevent VPN/NAT connection drops	grep -q '^ClientAliveCountMax 3' /etc/ssh/sshd_config	required"
     "base.filesystem.1	Create workspace and ACFS directories	test -d /data/projects	required"
     "base.filesystem.2	Create workspace and ACFS directories	test -d \"\${TARGET_HOME:-/home/ubuntu}/.acfs\"	required"
     "shell.zsh	Zsh shell package	zsh --version	required"

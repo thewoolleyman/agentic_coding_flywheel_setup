@@ -96,10 +96,10 @@ acfs_security_init() {
 
 source "$ACFS_GENERATED_SCRIPT_DIR/install_base.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_users.sh"
+source "$ACFS_GENERATED_SCRIPT_DIR/install_network.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_filesystem.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_shell.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_cli.sh"
-source "$ACFS_GENERATED_SCRIPT_DIR/install_network.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_lang.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_tools.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_agents.sh"
@@ -114,10 +114,10 @@ install_all() {
 
     install_base
     install_users
+    install_network
     install_filesystem
     install_shell
     install_cli
-    install_network
     install_lang
     install_tools
     install_agents
