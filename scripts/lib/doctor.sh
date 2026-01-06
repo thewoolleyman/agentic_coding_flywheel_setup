@@ -599,6 +599,29 @@ check_identity() {
     blank_line
 }
 
+# Check network configuration
+check_network() {
+    section "Network"
+
+    # Check SSH keepalive configuration (prevents VPN/NAT disconnections)
+    if [[ -f /etc/ssh/sshd_config ]]; then
+        local keepalive_interval
+        local keepalive_count
+        keepalive_interval=$(grep -E '^ClientAliveInterval' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}') || true
+        keepalive_count=$(grep -E '^ClientAliveCountMax' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}') || true
+
+        if [[ -n "$keepalive_interval" && "$keepalive_interval" -gt 0 ]]; then
+            check "network.ssh_keepalive" "SSH keepalive (${keepalive_interval}s interval)" "pass" "prevents VPN/NAT disconnects"
+        else
+            check "network.ssh_keepalive" "SSH keepalive" "warn" "not configured" "sudo sed -i 's/^#*ClientAliveInterval.*/ClientAliveInterval 60/' /etc/ssh/sshd_config && sudo systemctl reload sshd"
+        fi
+    else
+        check "network.ssh_keepalive" "SSH keepalive" "warn" "sshd_config not found" "SSH server may not be installed"
+    fi
+
+    blank_line
+}
+
 # Check workspace
 check_workspace() {
     section "Workspace"
@@ -1862,6 +1885,7 @@ $(gum style --foreground "$ACFS_MUTED" "OS:") $(gum style --foreground "$ACFS_TE
     fi
 
     check_identity
+    check_network
     check_workspace
     check_shell
     check_core_tools

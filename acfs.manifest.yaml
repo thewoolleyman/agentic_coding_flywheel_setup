@@ -56,6 +56,47 @@ modules:
       - id ubuntu
       - sudo -n true
 
+  - id: network.ssh_keepalive
+    description: Enable SSH keepalive to prevent VPN/NAT connection drops
+    category: network
+    phase: 2
+    run_as: root
+    optional: true
+    enabled_by_default: true
+    tags: [network, remote-dev]
+    notes:
+      - "Prevents SSH disconnects over VPNs and NAT gateways"
+      - "Sends keepalive every 60s, disconnects after 3 missed (3 min)"
+      - "Critical for remote development workflows"
+    installed_check:
+      run_as: root
+      command: "grep -q '^ClientAliveInterval' /etc/ssh/sshd_config 2>/dev/null"
+    install:
+      - |
+          # Enable SSH keepalive settings to prevent VPN/NAT disconnections
+          # Back up original config
+          cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.acfs 2>/dev/null || true
+
+          # Enable ClientAliveInterval (send keepalive every 60 seconds)
+          if grep -q '^#*ClientAliveInterval' /etc/ssh/sshd_config; then
+            sed -i 's/^#*ClientAliveInterval.*/ClientAliveInterval 60/' /etc/ssh/sshd_config
+          else
+            echo 'ClientAliveInterval 60' >> /etc/ssh/sshd_config
+          fi
+
+          # Enable ClientAliveCountMax (disconnect after 3 missed keepalives = 3 min)
+          if grep -q '^#*ClientAliveCountMax' /etc/ssh/sshd_config; then
+            sed -i 's/^#*ClientAliveCountMax.*/ClientAliveCountMax 3/' /etc/ssh/sshd_config
+          else
+            echo 'ClientAliveCountMax 3' >> /etc/ssh/sshd_config
+          fi
+
+          # Reload sshd to apply changes (won't kill existing connections)
+          systemctl reload sshd || systemctl reload ssh || true
+    verify:
+      - grep -q '^ClientAliveInterval 60' /etc/ssh/sshd_config
+      - grep -q '^ClientAliveCountMax 3' /etc/ssh/sshd_config
+
   # ============================================================
   # PHASE 3: Filesystem setup
   # ============================================================
