@@ -489,6 +489,29 @@ To force a fresh reinstall of all tools:
 curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main/install.sh" | bash -s -- --yes --mode vibe --force-reinstall
 ```
 
+### Environment Variables
+
+The installer behavior can be customized with environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ACFS_REF` | `main` | Git ref (branch, tag, or commit SHA) to install from |
+| `ACFS_REPO_OWNER` | `Dicklesworthstone` | GitHub repository owner (for installing from forks) |
+| `ACFS_REPO_NAME` | `agentic_coding_flywheel_setup` | GitHub repository name |
+
+**Installing from a fork:**
+```bash
+# Install from your fork (useful for testing changes)
+export ACFS_REPO_OWNER=yourusername
+curl -fsSL "https://raw.githubusercontent.com/yourusername/agentic_coding_flywheel_setup/main/install.sh" | bash -s -- --yes --mode vibe
+```
+
+**Pinning to a specific version:**
+```bash
+# Pin to a tagged release
+ACFS_REF=v0.1.0 curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/v0.1.0/install.sh" | bash -s -- --yes
+```
+
 ### Pre-Flight Check
 
 Before running the full installer, validate your system:
