@@ -2555,21 +2555,11 @@ EOF
 # ============================================================
 install_github_cli() {
     # GitHub CLI (gh) is a core tool for ACFS workflows (PRs, auth, issues).
-    # Prefer distro apt; fall back to the official GitHub CLI apt repo if needed.
-
-    if command_exists gh; then
-        return 0
-    fi
-
-    log_detail "Installing GitHub CLI (gh)"
-
-    # First try default apt repos (often available on Ubuntu 24.04+/25.x).
-    if $SUDO apt-get install -y gh >/dev/null 2>&1; then
-        return 0
-    fi
-
-    # Fallback: add official GitHub CLI apt repo and retry.
-    log_detail "gh not available in default apt repos; adding GitHub CLI apt repo"
+    # Always converge on GitHub's signed apt repository. Ubuntu's community
+    # package can lag far enough to miss supported APIs and security fixes, and
+    # returning early when `gh` already exists would strand existing ACFS hosts
+    # on that stale package indefinitely.
+    log_detail "Configuring the official GitHub CLI apt repository"
 
     if ! $SUDO mkdir -p /etc/apt/keyrings; then
         return 1
@@ -2587,10 +2577,23 @@ install_github_cli() {
         return 1
     fi
 
-    $SUDO apt-get update -y >/dev/null 2>&1 || true
+    if ! $SUDO apt-get update -y >/dev/null 2>&1; then
+        return 1
+    fi
     if ! $SUDO apt-get install -y gh >/dev/null 2>&1; then
         return 1
     fi
+
+    hash -r
+    if ! command_exists gh; then
+        return 1
+    fi
+    if ! apt-cache policy gh 2>/dev/null | grep -Fq "https://cli.github.com/packages"; then
+        log_warn "GitHub CLI installed, but apt does not report the official cli.github.com source"
+        return 1
+    fi
+
+    log_detail "GitHub CLI ready from cli.github.com ($(gh --version 2>/dev/null | head -1))"
     return 0
 }
 
@@ -2652,15 +2655,12 @@ install_cli_tools() {
     log_detail "Installing required apt packages"
     try_step "Installing required apt packages" $SUDO apt-get install -y ripgrep tmux fzf direnv jq git-lfs lsof dnsutils netcat-openbsd strace rsync || return 1
 
-    # GitHub CLI (gh)
-    if command_exists gh; then
-        log_detail "gh already installed ($(gh --version 2>/dev/null | head -1 || echo 'gh'))"
+    # GitHub CLI (gh): always run the idempotent installer so existing hosts
+    # move off Ubuntu's stale community package and receive supported upgrades.
+    if try_step "Installing or upgrading GitHub CLI" install_github_cli; then
+        log_success "gh installed or upgraded"
     else
-        if try_step "Installing GitHub CLI" install_github_cli; then
-            log_success "gh installed"
-        else
-            log_fatal "Failed to install GitHub CLI (gh)"
-        fi
+        log_fatal "Failed to install or upgrade GitHub CLI (gh)"
     fi
 
     # Git LFS setup (best-effort: installs hooks config for the target user)

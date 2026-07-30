@@ -676,7 +676,7 @@ check_core_tools() {
     check_command "tool.go" "Go" "go" "sudo apt install golang-go"
     check_command "tool.tmux" "tmux" "tmux" "sudo apt install tmux"
     check_command "tool.rg" "ripgrep" "rg" "sudo apt install ripgrep"
-    check_command "tool.gh" "GitHub CLI (gh)" "gh" "sudo apt-get install -y gh"
+    check_command "tool.gh" "GitHub CLI (gh)" "gh" "Re-run ACFS to configure the official cli.github.com apt source"
     check_command "tool.git_lfs" "Git LFS" "git-lfs" "sudo apt-get install -y git-lfs"
     check_command "tool.rsync" "rsync" "rsync" "sudo apt-get install -y rsync"
     check_command "tool.strace" "strace" "strace" "sudo apt-get install -y strace"
@@ -1461,7 +1461,7 @@ check_vault_configured() {
 # Enhanced: Caching support (bead lz1)
 check_gh_auth() {
     if ! command -v gh &>/dev/null; then
-        check "deep.cloud.gh_auth" "GitHub CLI" "warn" "not installed" "sudo apt install gh"
+        check "deep.cloud.gh_auth" "GitHub CLI" "warn" "not installed" "Re-run ACFS to configure the official cli.github.com apt source"
         return
     fi
 
