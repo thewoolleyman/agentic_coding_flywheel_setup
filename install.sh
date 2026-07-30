@@ -2588,7 +2588,12 @@ install_github_cli() {
     if ! command_exists gh; then
         return 1
     fi
-    if ! apt-cache policy gh 2>/dev/null | grep -Fq "https://cli.github.com/packages"; then
+    local gh_policy
+    if ! gh_policy="$(apt-cache policy gh 2>/dev/null)"; then
+        log_warn "GitHub CLI installed, but apt could not report its package origin"
+        return 1
+    fi
+    if ! grep -Fq "https://cli.github.com/packages" <<<"$gh_policy"; then
         log_warn "GitHub CLI installed, but apt does not report the official cli.github.com source"
         return 1
     fi
