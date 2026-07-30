@@ -114,6 +114,13 @@ assert_call "$calls" \
     "apt-cache policy gh" \
     "installed package origin is verified"
 
+github_cli_body="$(extract_function install_github_cli)"
+if grep -Eq 'apt-cache policy gh.*\|.*grep' <<<"$github_cli_body"; then
+    fail "package-origin verification is pipefail-safe" "apt-cache output is still piped into grep -q"
+else
+    pass "package-origin verification is pipefail-safe"
+fi
+
 cli_tools_body="$(extract_function install_cli_tools)"
 if grep -q 'if command_exists gh' <<<"$cli_tools_body"; then
     fail "existing gh installations are upgraded" "install_cli_tools still skips install_github_cli"
